@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="main.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<style>
+  uxp-panel {
+    padding: 9px;
+    overflow-y: scroll;
+  }
+  .wrapper > * + * {
+    margin-top: 9px;
+  }
+</style>
+
+<body>
+  <uxp-panel panelid="microMarkup">
+	<sp-detail>SELECTED</sp-detail>
+	<div class="flex">
+		<sp-icon name="ui:Magnifier" size="s"></sp-icon>
+		<span id="selection-info"></span>
+	</div>
+	<div class="actions">
+		<sp-button variant="primary" id="apply">Apply</sp-button>
+	</div>
+	<sp-detail>PARAGRAPH STYLES</sp-detail>
+	<textarea id="pstyles" placeholder="Set up your paragraph styles"></textarea>
+    <sp-detail>CHARACTER STYLES</sp-detail>
+	<textarea id="cstyles" placeholder="Set up your Character styles"></textarea>
+
+	<footer></footer>
+  </uxp-panel>
+</body>
+</html>
