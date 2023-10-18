@@ -45,7 +45,7 @@ export default class MagicMarkupPlugin {
 				.submenus.item(PLUGIN_NAME)
 
 			const existingMenuItem = pluginMenu.menuItems.itemByName("✨ Apply Magic Markup");
-			existingMenuItem.remove()
+			if (existingMenuItem.isValid) { existingMenuItem.remove() }
 			// ^ Keep if debugging/developing
 
 			if (! existingMenuItem.isValid) {
