@@ -109,6 +109,10 @@
         charStyles.add({ name });
     });
   }
+  function resetGrepPreferences(app2) {
+    app2.findGrepPreferences = null;
+    app2.changeGrepPreferences = null;
+  }
 
   // src/menu-item.js
   function createMenuItem({
@@ -150,6 +154,7 @@
         this.plugin.app.addEventListener("afterSelectionChanged", this.onChange);
         this.plugin.app.addEventListener("afterContextChanged", this.onChange);
       } else {
+        setInterval(this.onChange, 500);
       }
       this.onChange();
     }
@@ -167,6 +172,9 @@
     }
     get isDocument() {
       return this.scopeRoot instanceof Document;
+    }
+    get grepTargets() {
+      return Array.isArray(this.scopeRoot) ? this.scopeRoot.map((item) => item.parentStory || null).filter((item) => item !== null) : [this.scopeRoot];
     }
     /**
      * Scope changed, validate and emit event
@@ -483,14 +491,15 @@
       this.presets = new Presets(this);
       this.confirmDialog = new ConfirmDialog();
       this.promptDialog = new PromptDialog();
+      this.applyMagic = this.applyMagic.bind(this);
       this.textareas.pstyles = new Textarea($("#pstyles"));
       this.textareas.cstyles = new Textarea($("#cstyles"), false);
-      this.runButton.addEventListener("click", this.actionRun.bind(this));
+      this.runButton.addEventListener("click", this.applyMagic);
       createMenuItem({
         app: app2,
         pluginName: PLUGIN_NAME,
         menuItemName: "\u2728 Apply Magic Markup",
-        invokeCallback: this.actionRun.bind(this)
+        invokeCallback: this.applyMagic.bind(this)
       });
     }
     destroy() {
@@ -498,19 +507,19 @@
     }
     showPanel() {
     }
-    actionRun(agreedToDocumentMagic = false) {
+    applyMagic({ wholeDocument = false }) {
       if (!this.app.activeDocument)
         return;
       if (!this.scope)
         return;
-      if (this.scope.isDocument && agreedToDocumentMagic !== true) {
+      if (this.scope.isDocument && wholeDocument !== true) {
         return this.confirmDialog.show({
           title: "Whole document selected!",
           body: "Are you sure you want to apply Magic Markup to the whole document?",
-          onSuccess: () => this.actionRun(true)
+          onSuccess: () => this.applyMagic({ wholeDocument: true })
         });
       }
-      this.buttonRun.disabled = true;
+      this.runButton.disabled = true;
       ensureParagraphStyles(this.app.activeDocument, this.textareas.pstyles.rules.map((rule) => rule.style));
       ensureCharacterStyles(this.app.activeDocument, this.textareas.cstyles.rules.map((rule) => rule.style));
       const greps = [];
@@ -528,16 +537,16 @@
       }
       this.app.doScript(() => {
         for (const [findPrefs, changePrefs] of greps) {
-          this.app.findGrepPreferences = null;
+          resetGrepPreferences(this.app);
           this.app.findGrepPreferences.properties = findPrefs;
-          this.app.changeGrepPreferences = null;
           this.app.changeGrepPreferences.properties = changePrefs;
-          this.scope.changeGrep();
+          for (const target of this.scope.grepTargets) {
+            target.changeGrep();
+          }
         }
-        this.app.findGrepPreferences = null;
-        this.app.changeGrepPreferences = null;
-      }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Micro Markup to styles");
-      this.buttonRun.disabled = false;
+        resetGrepPreferences(this.app);
+      }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
+      this.runButton.disabled = false;
     }
   };
   new MagicMarkupPlugin(app);

@@ -23,3 +23,8 @@ export function ensureCharacterStyles(document, names) {
 		if (! style.isValid) charStyles.add({name})
 	})
 }
+
+export function resetGrepPreferences(app) {
+	app.findGrepPreferences = null
+	app.changeGrepPreferences = null
+}

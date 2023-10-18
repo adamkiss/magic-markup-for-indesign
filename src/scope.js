@@ -24,7 +24,7 @@ export default class Scope extends EventTarget {
 			this.plugin.app.addEventListener('afterSelectionChanged', this.onChange)
 			this.plugin.app.addEventListener("afterContextChanged", this.onChange)
 		} else {
-			// setTimeout(this.onChange, 500)
+			setInterval(this.onChange, 500)
 		}
 
 		// detect initial scope
@@ -49,6 +49,12 @@ export default class Scope extends EventTarget {
 		return this.scopeRoot instanceof Document
 	}
 
+	get grepTargets() {
+		return Array.isArray(this.scopeRoot)
+			? this.scopeRoot.map(item => item.parentStory || null).filter(item => item !== null)
+			: [this.scopeRoot]
+	}
+
 	/**
 	 * Scope changed, validate and emit event
 	 */
@@ -71,8 +77,6 @@ export default class Scope extends EventTarget {
 			this.scopeRoot = app.selection
 			this.scopeText = 'multiple objects'
 			return this.change()
-
-
 		}
 
 		// discard unsupport selection types
