@@ -1,7 +1,7 @@
 import Textarea from "./textarea";
 import {$, ensureParagraphStyles, ensureCharacterStyles} from "./utils";
 
-const {ScriptLanguage, UndoModes} = require("indesign");
+const {ScriptLanguage, UndoModes, Document} = require("indesign");
 
 const PLUGIN_NAME = '🪄 Magic Markup';
 
@@ -22,6 +22,8 @@ export default class MagicMarkupPlugin {
 		this.$els = {
 			scopeDetail: $('sp-detail#scope'),
 			runButton: $('#button-run'),
+			confirmSelectionSubmit: $('#confirm-selection-submit'),
+			confirmSelectionCancel: $('#confirm-selection-cancel'),
 		}
 		this.textareas.pstyles = new Textarea($('#pstyles'))
 		this.textareas.cstyles = new Textarea($('#cstyles'), false)
@@ -30,6 +32,11 @@ export default class MagicMarkupPlugin {
 		this.listeners.push(this.app.addEventListener('afterSelectionChanged', this.listenerSelectionChanged.bind(this)))
 		this.listeners.push(this.app.addEventListener("afterContextChanged", this.listenerAfterContextChanged.bind(this)))
 		this.$els.runButton.addEventListener('click', this.actionRun.bind(this))
+		this.$els.confirmSelectionSubmit.addEventListener('click', _ => {
+			$('#confirm-document-selection').close()
+			this.actionRun(true)
+		})
+		this.$els.confirmSelectionCancel.addEventListener('click', _ => $('#confirm-document-selection').close())
 
 		// Add a menu item (?) to be targeted by a script 🙄
 		this.createAndAddMenuItem()
@@ -127,10 +134,16 @@ export default class MagicMarkupPlugin {
 		this.$els.runButton.disabled = disabled
 	}
 
-	actionRun() {
+	actionRun(agreedToDocumentMagic = false) {
 		// Shouldn't happen, but…
 		if (! this.app.activeDocument) return
 		if (! this.scope) return
+
+		if (this.scope instanceof Document && agreedToDocumentMagic !== true) {
+			// Show modal to confirm document-wide application
+			$('#confirm-document-selection').showModal()
+			return;
+		}
 
 		this.setRunButtonDisabled(true)
 

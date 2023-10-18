@@ -29,6 +29,9 @@
 			align-items: center;
 			justify-content: space-between;
 		}
+		.flex-end {
+			justify-content: flex-end;
+		}
 		.flex > * + * {
 			flex-shrink: 0;
 			margin-left: var(--padding);
@@ -114,18 +117,31 @@
 </head>
 
 <body>
-  <uxp-panel panelid="magicMarkup">
-	<div class="flex">
-		<sp-detail id="scope" data-grow>SCOPE<br>…</sp-detail>
-		<sp-action-button variant="primary" id="button-run">
-			✨ Apply Magic
-		</sp-action-button>
-	</div>
-	<sp-divider></sp-divider>
-	<sp-detail>PARAGRAPH STYLES</sp-detail>
-	<textarea id="pstyles" placeholder="Set up your paragraph styles"></textarea>
-    <sp-detail>CHARACTER STYLES</sp-detail>
-	<textarea id="cstyles" placeholder="Set up your Character styles"></textarea>
-  </uxp-panel>
+	<uxp-panel panelid="magicMarkup">
+		<div class="flex">
+			<sp-detail id="scope" data-grow>SCOPE<br>…</sp-detail>
+			<sp-action-button variant="primary" id="button-run">
+				✨ Apply Magic
+			</sp-action-button>
+		</div>
+
+		<sp-divider></sp-divider>
+
+		<sp-detail>PARAGRAPH STYLES</sp-detail>
+		<textarea id="pstyles" placeholder="Set up your paragraph styles"></textarea>
+		<sp-detail>CHARACTER STYLES</sp-detail>
+		<textarea id="cstyles" placeholder="Set up your Character styles"></textarea>
+
+
+	</uxp-panel>
+
+	<dialog id="confirm-document-selection" style="width: 570px">
+		<sp-heading>Whole document selected!</sp-heading>
+		<sp-body>Do you want to apply ✨ Magic to the whole document?</sp-body>
+		<footer class="flex flex-end">
+			<sp-button variant="primary" id="confirm-selection-cancel">No</sp-button>
+			<sp-button variant="cta" id="confirm-selection-submit">Yes</sp-button>
+		</footer>
+	</dialog>
 </body>
 </html>
