@@ -1,8 +1,9 @@
 import Textarea from "./textarea";
-
 import {$, ensureParagraphStyles, ensureCharacterStyles} from "./utils";
 
 const {ScriptLanguage, UndoModes} = require("indesign");
+
+const PLUGIN_NAME = '🪄 Magic Markup';
 
 export default class MagicMarkupPlugin {
 	$els = {}
@@ -29,7 +30,33 @@ export default class MagicMarkupPlugin {
 		this.app.addEventListener("afterContextChanged", this.listenerAfterContextChanged.bind(this));
 		this.$els.runButton.addEventListener('click', this.actionRun.bind(this))
 
+		// Add a menu item (?) to be targeted by a script 🙄
+		this.createAndAddMenuItem()
+
+		// Fire off context change
 		this.listenerAfterContextChanged()
+	}
+
+	createAndAddMenuItem() {
+		try {
+			const pluginMenu = this.app
+				.menus.item('Main')
+				.submenus.item('Plug-Ins')
+				.submenus.item(PLUGIN_NAME)
+
+			const existingMenuItem = pluginMenu.menuItems.itemByName("✨ Apply Magic Markup");
+			// existingMenuItem.remove()
+			// ^ Keep if debugging/developing
+
+			if (! existingMenuItem.isValid) {
+				this.menuItem = this.app.scriptMenuActions.add("✨ Apply Magic Markup")
+				this.menuItem.addEventListener('onInvoke', this.actionRun.bind(this));
+				pluginMenu.menuItems.add(this.menuItem)
+			}
+		} catch (error) {
+			// Swallow the error
+			console.error(error)
+		}
 	}
 
 	showPanel() {

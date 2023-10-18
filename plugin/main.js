@@ -119,6 +119,7 @@
 
   // src/plugin.js
   var { ScriptLanguage, UndoModes } = __require("indesign");
+  var PLUGIN_NAME = "\u{1FA84} Magic Markup";
   var MagicMarkupPlugin = class {
     constructor(app2) {
       __publicField(this, "$els", {});
@@ -137,7 +138,21 @@
       this.app.addEventListener("afterSelectionChanged", this.listenerSelectionChanged.bind(this));
       this.app.addEventListener("afterContextChanged", this.listenerAfterContextChanged.bind(this));
       this.$els.runButton.addEventListener("click", this.actionRun.bind(this));
+      this.createAndAddMenuItem();
       this.listenerAfterContextChanged();
+    }
+    createAndAddMenuItem() {
+      try {
+        const pluginMenu = this.app.menus.item("Main").submenus.item("Plug-Ins").submenus.item(PLUGIN_NAME);
+        const existingMenuItem = pluginMenu.menuItems.itemByName("\u2728 Apply Magic Markup");
+        if (!existingMenuItem.isValid) {
+          this.menuItem = this.app.scriptMenuActions.add("\u2728 Apply Magic Markup");
+          this.menuItem.addEventListener("onInvoke", this.actionRun.bind(this));
+          pluginMenu.menuItems.add(this.menuItem);
+        }
+      } catch (error) {
+        console.error(error);
+      }
     }
     showPanel() {
       this.updateScope();
@@ -231,7 +246,19 @@
   var { entrypoints } = __require("uxp");
   var { app } = __require("indesign");
   var plugin = new MagicMarkupPlugin(app);
+  console.log(app);
   entrypoints.setup({
+    /** Also removed from manifest.json
+    {
+    	"type": "command",
+    	"id": "applyMagic",
+    	"description": "Apply Magic Markup to selection",
+    	"label": " ✨ Apply Magic Markup"
+    },
+     */
+    // commands: {
+    // 	applyMagic: plugin.actionRun.bind(plugin)
+    // },
     panels: {
       magicMarkup: {
         show(args) {
