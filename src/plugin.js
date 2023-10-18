@@ -4,7 +4,7 @@ import {$, ensureParagraphStyles, ensureCharacterStyles} from "./utils";
 
 const {ScriptLanguage, UndoModes} = require("indesign");
 
-export default class MicroMarkupPlugin {
+export default class MagicMarkupPlugin {
 	$els = {}
 	textareas = {}
 	app = null

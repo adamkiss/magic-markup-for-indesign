@@ -1,7 +1,7 @@
 {
-  "name": "com.adamkiss.micro-markup",
+  "name": "com.adamkiss.magic-markup",
   "version": "1.0.0",
-  "description": "Convert custom Markup to Styles",
+  "description": "Magically convert markup to styles",
   "main": "index.js",
   "scripts": {
     "start": "esbuild --bundle --watch main=src/_main.js index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy",

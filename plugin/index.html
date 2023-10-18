@@ -59,7 +59,11 @@
 		}
 
 		@media (prefers-color-scheme: darkest) {
+			body {
+				background: #262626;
+			}
 			uxp-panel {
+				background-color: #323232;
 				color: white;
 			}
 			textarea {
@@ -68,43 +72,53 @@
 			}
 		}
 		@media (prefers-color-scheme: dark) {
-			textarea:focus {
+			body {
+				background: #454545;
+			}
+			uxp-panel {
+				background-color: #535353;
+				color: white;
+			}
+			textarea {
 				background:  #454545 !important;
 				color: white !important;
 			}
 		}
 		@media (prefers-color-scheme: light) {
-			textarea:focus {
-				background:  #454545 !important;
-				color: white !important;
+			body {
+				background: #a3a3a3;
+			}
+			uxp-panel {
+				background-color: #b9b9b9;
+				color: white;
+			}
+			textarea {
+				background: #a3a3a3 !important;
+				color: black !important;
 			}
 		}
 		@media (prefers-color-scheme: lightest) {
+			body {
+				background: #dbdbdb;
+			}
+			uxp-panel {
+				background-color: #f0f0f0;
+				color: white;
+			}
 			textarea {
-				background:  #2a2a2a !important;
-				color: white !important;
+				background:  #dbdbdb !important;
+				color: black !important;
 			}
 		}
 	</style>
 </head>
 
 <body>
-  <uxp-panel panelid="microMarkup">
+  <uxp-panel panelid="magicMarkup">
 	<div class="flex">
 		<sp-detail id="scope" data-grow>SCOPE<br>…</sp-detail>
 		<sp-action-button variant="primary" id="button-run">
-			<svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 18 18" width="18" slot="icon">
-				<defs>
-				  <style>
-					.fill {
-					  fill: #464646;
-					}
-				  </style>
-				</defs>
-				<title>S PlayCircle 18 N</title>
-				<rect id="Canvas" fill="#ff13dc" opacity="0" width="18" height="18" /><path class="fill" d="M9,1a8,8,0,1,0,8,8A8,8,0,0,0,9,1Zm4.2685,8.43L7.255,12.93A.50009.50009,0,0,1,7,13H6.5a.5.5,0,0,1-.5-.5v-7A.5.5,0,0,1,6.5,5H7a.50009.50009,0,0,1,.255.07l6.0135,3.5a.5.5,0,0,1,0,.86Z" />
-			</svg>
-			<span>Style markup</span>
+			✨ Apply Magic
 		</sp-action-button>
 	</div>
 	<sp-divider></sp-divider>

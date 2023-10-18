@@ -119,7 +119,7 @@
 
   // src/plugin.js
   var { ScriptLanguage, UndoModes } = __require("indesign");
-  var MicroMarkupPlugin = class {
+  var MagicMarkupPlugin = class {
     constructor(app2) {
       __publicField(this, "$els", {});
       __publicField(this, "textareas", {});
@@ -230,10 +230,10 @@
   // src/_main.js
   var { entrypoints } = __require("uxp");
   var { app } = __require("indesign");
-  var plugin = new MicroMarkupPlugin(app);
+  var plugin = new MagicMarkupPlugin(app);
   entrypoints.setup({
     panels: {
-      microMarkup: {
+      magicMarkup: {
         show(args) {
           plugin.showPanel();
         }

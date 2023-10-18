@@ -1,12 +1,12 @@
 const { entrypoints } = require("uxp");
 const {app} = require("indesign");
 
-import MicroMarkupPlugin from "./plugin";
-const plugin = new MicroMarkupPlugin(app);
+import MagicMarkupPlugin from "./plugin";
+const plugin = new MagicMarkupPlugin(app);
 
 entrypoints.setup({
   panels: {
-    microMarkup: {
+    magicMarkup: {
       show(args) {
 		plugin.showPanel();
       }

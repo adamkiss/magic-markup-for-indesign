@@ -1,6 +1,6 @@
 {
-  "id": "com.adamkiss.micro-markup",
-  "name": "Micro Markup",
+  "id": "com.adamkiss.magic-markup",
+  "name": "Magic Markup",
   "version": "1.0.0",
   "main": "index.html",
   "host": [
@@ -13,7 +13,7 @@
   "entrypoints": [
     {
       "type": "panel",
-      "id": "microMarkup",
+      "id": "magicMarkup",
       "minimumSize": {
         "width": 230,
         "height": 200
@@ -31,7 +31,7 @@
         "height": 300
       },
       "label": {
-        "default": "Micro Markup"
+        "default": "🪄 Magic Markup"
       },
       "icons": [
         {
