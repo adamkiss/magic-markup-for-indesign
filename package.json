@@ -1,23 +1,14 @@
 {
-  "name": "com.adobe.uxp.quick.starter.id",
+  "name": "com.adamkiss.micro-markup",
   "version": "1.0.0",
-  "description": "Default template for creating Adobe UXP based InDesign plugin.",
+  "description": "Convert custom Markup to Styles",
   "main": "index.js",
   "scripts": {
     "start": "esbuild --bundle --watch main=src/_main.js index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy",
     "build": "esbuild --bundle --target=es6 main=src/_main.js index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@git.corp.adobe.com:torq/uxp-developer-tools.git",
-    "directory": "packages/uxp-templates-pack"
-  },
-  "author": "Adobe Inc",
-  "license": "Apache-2.0",
-  "files": [
-    "template.json",
-    "template"
-  ],
+  "author": "Adam Kiss",
+  "license": "MIT",
   "devDependencies": {
     "esbuild": "^0.19.5"
   }
