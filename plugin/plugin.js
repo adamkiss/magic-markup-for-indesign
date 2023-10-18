@@ -241,7 +241,8 @@
       this.onSuccessFn = onSuccess;
       this.$title.innerHTML = title;
       this.$body.innerHTML = `<sp-body>${body}</sp-body>`;
-      this.$buttonConfirm.setAttribute("variant", destructive ? "negative" : "cta");
+      this.$buttonConfirm.setAttribute("variant", destructive ? "warning" : "cta");
+      console.log(destructive);
       this.$buttonConfirm.addEventListener("click", this.confirm);
       this.$buttonCancel.addEventListener("click", this.close);
       this.$dialog.showModal();
@@ -289,43 +290,121 @@
   var { Application: Application3 } = __require("indesign");
   var Presets = class extends EventTarget {
     plugin = null;
-    presets = [
-      {
-        name: "Default",
-        paragraph: [],
-        character: [],
-        invisibles: []
-      },
-      {
-        name: "Another",
+    presets = {
+      "Default": {
         paragraph: [],
         character: [],
         invisibles: []
       }
-    ];
+    };
     activePreset = "Default";
     constructor(plugin) {
       super();
       this.plugin = plugin;
       this.$picker = $("#presets");
-      this.updatePresetList();
+      this.$picker.addEventListener("change", this.onPickerChange.bind(this));
+      this.updatePresetSelect();
       this.$picker.disabled = false;
     }
-    _presetToMenuItem(preset) {
+    onPickerChange(e) {
+      const value = e.target.value;
+      if (value === this.activePreset)
+        return;
+      switch (e.target.value) {
+        case "__command__delete":
+          this.plugin.confirmDialog.show({
+            title: "Delete preset?",
+            destructive: true,
+            onSuccess: () => {
+              this.deletePreset(this.activePreset);
+            }
+          });
+          this.updatePresetSelect();
+          break;
+        case "__command__rename":
+          this.plugin.promptDialog.show({
+            title: "Rename the preset to:",
+            input: this.activePreset,
+            onSuccess: (val) => {
+              this.renamePreset(this.activePreset, val);
+            }
+          });
+          this.updatePresetSelect();
+          break;
+        case "__command__duplicate":
+          this.plugin.promptDialog.show({
+            title: "Duplicate the preset as:",
+            input: this.activePreset + " copy",
+            onSuccess: (val) => {
+              this.duplicatePreset(this.activePreset, val);
+            }
+          });
+          this.updatePresetSelect();
+          break;
+        default:
+          this.activatePreset(value);
+      }
+    }
+    get lastPreset() {
+      const keys = Object.keys(this.presets);
+      return keys[keys.length - 1];
+    }
+    deletePreset(name) {
+      if (name === "Default")
+        return;
+      delete this.presets[name];
+      this.activatePreset(this.lastPreset);
+    }
+    renamePreset(name, newName) {
+      if (name === "Default")
+        return;
+      const preset = this.presets[name];
+      this.presets[newName] = preset;
+      delete this.presets[name];
+      this.activatePreset(newName);
+    }
+    duplicatePreset(name, newName) {
+      const preset = this.presets[name];
+      this.presets[newName] = Object.assign({}, preset);
+      this.activatePreset(newName);
+    }
+    activatePreset(name) {
+      this.activePreset = name;
+      this.updatePresetSelect();
+    }
+    _mi_preset(name) {
       return `
-			<sp-menu-item value="${preset.name}"${this.activePreset === preset.name ? ' selected="selected"' : ""}>${preset.name}</sp-menu-item>
+			<sp-menu-item value="${name}"${this.activePreset === name ? ' selected="selected"' : ""}>${name}</sp-menu-item>
 		`;
     }
-    updatePresetList() {
-      this.$picker.querySelector("sp-menu").innerHTML = `
-		${this.presets.map((p) => this._presetToMenuItem(p)).join("")}
-		<sp-menu-divider></sp-menu-divider>
-		<sp-menu-item id="preset-rename" ${this.activePreset === "Default" ? "disabled" : ""}>Rename preset</sp-menu-item>
-		<sp-menu-item id="preset-duplicate">Duplicate preset</sp-menu-item>
-		<sp-menu-item id="preset-delete" ${this.activePreset === "Default" ? "disabled" : ""}>Delete preset</sp-menu-item>
+    _mi_divider() {
+      return `<sp-menu-divider></sp-menu-divider>`;
+    }
+    _mi_command({ command, text, disabled }) {
+      return `
+			<sp-menu-item value="__command__${command}"${disabled ? ' disabled="disabled"' : ""}>${text}</sp-menu-item>
 		`;
-      this.$picker.setAttribute("value", this.activePreset);
-      console.log(this.$picker.value);
+    }
+    updatePresetSelect() {
+      const HTML = [
+        ...Object.keys(this.presets).map(this._mi_preset.bind(this)),
+        this._mi_divider(),
+        this._mi_command({
+          command: "rename",
+          text: "Rename preset",
+          disabled: this.activePreset === "Default"
+        }),
+        this._mi_command({
+          command: "duplicate",
+          text: "Duplicate preset"
+        }),
+        this._mi_command({
+          command: "delete",
+          text: "Delete preset",
+          disabled: this.activePreset === "Default"
+        })
+      ].join("");
+      this.$picker.querySelector("sp-menu").innerHTML = HTML;
     }
   };
 
@@ -338,11 +417,12 @@
       super();
       this.$dialog = $("dialog#prompt");
       this.$title = this.$dialog.querySelector("sp-heading");
-      this.$input = this.$dialog.querySelector("dialog#prompt");
+      this.$input = this.$dialog.querySelector("#prompt-input");
       this.$buttonConfirm = this.$dialog.querySelector('sp-button[action="confirm"]');
       this.$buttonCancel = this.$dialog.querySelector('sp-button[action="cancel"]');
       this.confirm = this.confirm.bind(this);
       this.close = this.close.bind(this);
+      this.confirmByEnter = this.confirmByEnter.bind(this);
     }
     show({
       title = "",
@@ -350,12 +430,22 @@
       destructive = false,
       onSuccess = null
     }) {
+      this.onSuccessFn = onSuccess;
       this.$title.innerHTML = title;
+      this.$input.setAttribute("value", input);
       this.$buttonConfirm.setAttribute("variant", destructive ? "negative" : "cta");
       this.$buttonConfirm.addEventListener("click", this.confirm);
       this.$buttonCancel.addEventListener("click", this.close);
+      this.$input.addEventListener("keydown", this.confirmByEnter);
       this.$dialog.showModal();
-      this.$input.focus();
+      setTimeout(() => {
+        this.$input.focus();
+      }, 100);
+    }
+    confirmByEnter(e) {
+      if (e.key === "Enter") {
+        this.confirm();
+      }
     }
     confirm() {
       this.onSuccessFn(this.$input.value || "");
@@ -365,6 +455,7 @@
       this.onSuccessFn = null;
       this.$buttonConfirm.removeEventListener("click", this.confirm);
       this.$buttonCancel.removeEventListener("click", this.close);
+      this.$input.removeEventListener("keydown", this.confirmByEnter);
       this.$dialog.close();
     }
   };
@@ -395,11 +486,6 @@
       this.textareas.pstyles = new Textarea($("#pstyles"));
       this.textareas.cstyles = new Textarea($("#cstyles"), false);
       this.runButton.addEventListener("click", this.actionRun.bind(this));
-      $("#test").addEventListener("click", (_) => this.promptDialog.show({
-        title: "Rename the preset to:",
-        input: "New preset name",
-        onSuccess: (val) => console.log("success", val)
-      }));
       createMenuItem({
         app: app2,
         pluginName: PLUGIN_NAME,

@@ -71,6 +71,8 @@ export default class Scope extends EventTarget {
 			this.scopeRoot = app.selection
 			this.scopeText = 'multiple objects'
 			return this.change()
+
+
 		}
 
 		// discard unsupport selection types

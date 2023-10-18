@@ -13,12 +13,13 @@ export default class PromptDialog extends EventTarget {
 
 		this.$dialog = $('dialog#prompt')
 		this.$title = this.$dialog.querySelector('sp-heading')
-		this.$input = this.$dialog.querySelector('dialog#prompt')
+		this.$input = this.$dialog.querySelector('#prompt-input')
 		this.$buttonConfirm = this.$dialog.querySelector('sp-button[action="confirm"]')
 		this.$buttonCancel = this.$dialog.querySelector('sp-button[action="cancel"]')
 
 		this.confirm = this.confirm.bind(this)
 		this.close = this.close.bind(this)
+		this.confirmByEnter = this.confirmByEnter.bind(this)
 	}
 
 	show({
@@ -27,16 +28,26 @@ export default class PromptDialog extends EventTarget {
 		destructive = false,
 		onSuccess = null
 	}) {
+		this.onSuccessFn = onSuccess
 		this.$title.innerHTML = title
-		// this.$input.setAttribute('value', input)
+		this.$input.setAttribute('value', input)
 
 		this.$buttonConfirm.setAttribute('variant', destructive ? 'negative' : 'cta')
 
 		this.$buttonConfirm.addEventListener('click', this.confirm)
 		this.$buttonCancel.addEventListener('click', this.close)
+		this.$input.addEventListener('keydown', this.confirmByEnter)
 
 		this.$dialog.showModal()
-		this.$input.focus()
+		setTimeout(() => {
+			this.$input.focus()
+		}, 100);
+	}
+
+	confirmByEnter(e) {
+		if (e.key === 'Enter') {
+			this.confirm()
+		}
 	}
 
 	confirm() {
@@ -49,6 +60,7 @@ export default class PromptDialog extends EventTarget {
 		this.onSuccessFn = null
 		this.$buttonConfirm.removeEventListener('click', this.confirm)
 		this.$buttonCancel.removeEventListener('click', this.close)
+		this.$input.removeEventListener('keydown', this.confirmByEnter)
 
 		// close the dialog
 		this.$dialog.close()

@@ -44,8 +44,12 @@
 			width: 100%;
 		}
 
+		sp-detail {
+			text-transform: uppercase;
+		}
+
 		sp-field-label {
-			color: inherit !important
+			color: inherit !important;
 		}
 		sp-field-label > sp-detail {
 			margin-bottom: 0;
@@ -139,22 +143,12 @@
 			<sp-action-button variant="primary" id="button-run" disabled>✨ Apply Magic</sp-action-button>
 		</div>
 
-		<sp-button variant="primary" id="test">Testit</sp-button>
-
 		<sp-divider></sp-divider>
 
-		<sp-field-label for="presets"><sp-detail>PRESETS</sp-detail></sp-field-label>
-        <sp-picker id="presets" size="s" label="Preset selection" disabled class="w-full">
-			<label for="" slot="label">Hello</label>
+		<sp-field-label for="presets"><sp-detail>ACTIVE PRESET</sp-detail></sp-field-label>
+        <sp-picker id="presets" size="m" label="Preset selection" disabled class="w-full">
 			<sp-menu slot="options"></sp-menu>
 		</sp-picker>
-		<select name="asdasd" id="asdasd">
-			<option value="1">1</option>
-			<option value="2">2</option>
-			<option value="---"></option>
-			<option value="3">3</option>
-			<option disabled>4</option>
-		</select>
 
 		<sp-divider></sp-divider>
 
@@ -177,6 +171,11 @@
 			</sp-action-button>
 		</sp-action-group>
 		<sp-body size="s">Export preset to clipboard, or Paste from clipboard</sp-body>
+
+		<sp-divider></sp-divider>
+
+		<sp-button variant="primary" id="test">Test</sp-button>
+		<sp-button variant="secondart" id="wat">Wat</sp-button>
 	</uxp-panel>
 
 	<dialog id="confirm" style="width: 570px">

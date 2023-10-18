@@ -8,20 +8,13 @@ import { $ } from "./utils";
 export default class Presets extends EventTarget {
 	plugin = null
 
-	presets = [
-		{
-			name: 'Default',
-			paragraph: [],
-			character: [],
-			invisibles: []
-		},
-		{
-			name: 'Another',
+	presets = {
+		'Default': {
 			paragraph: [],
 			character: [],
 			invisibles: []
 		}
-	]
+	}
 	activePreset = 'Default'
 
 	constructor(plugin) {
@@ -30,32 +23,128 @@ export default class Presets extends EventTarget {
 		this.plugin = plugin
 		this.$picker = $('#presets')
 
+		this.$picker.addEventListener('change', this.onPickerChange.bind(this))
+
 		// update preset list and enable
-		this.updatePresetList()
+		this.updatePresetSelect()
 		this.$picker.disabled = false
 	}
 
-	_presetToMenuItem(preset) {
+	onPickerChange(e) {
+		const value = e.target.value
+
+		if (value === this.activePreset) return
+
+		switch (e.target.value) {
+			case '__command__delete':
+				this.plugin.confirmDialog.show({
+					title: 'Delete preset?',
+					destructive: true,
+					onSuccess: () => {
+						this.deletePreset(this.activePreset)
+					}
+				})
+				this.updatePresetSelect() // reset the picker
+				break;
+			case '__command__rename':
+				this.plugin.promptDialog.show({
+					title: "Rename the preset to:",
+					input: this.activePreset,
+					onSuccess: (val) => {
+						this.renamePreset(this.activePreset, val)
+					}
+				})
+				this.updatePresetSelect() // reset the picker
+				break;
+			case '__command__duplicate':
+				this.plugin.promptDialog.show({
+					title: "Duplicate the preset as:",
+					input: this.activePreset + ' copy',
+					onSuccess: (val) => {
+						this.duplicatePreset(this.activePreset, val)
+					}
+				})
+				this.updatePresetSelect() // reset the picker
+				break;
+			default:
+				this.activatePreset(value)
+		}
+	}
+
+	get lastPreset() {
+		const keys = Object.keys(this.presets)
+		return keys[keys.length - 1]
+	}
+
+	deletePreset(name) {
+		// Shouldn't happen, but…
+		if (name === 'Default') return
+
+		delete this.presets[name]
+		this.activatePreset(this.lastPreset)
+	}
+
+	renamePreset(name, newName) {
+		// Shouldn't happen, but…
+		if (name === 'Default') return
+
+		const preset = this.presets[name]
+		this.presets[newName] = preset
+		delete this.presets[name]
+
+		this.activatePreset(newName)
+	}
+
+	duplicatePreset(name, newName) {
+		const preset = this.presets[name]
+		this.presets[newName] = Object.assign({}, preset)
+		this.activatePreset(newName)
+	}
+
+	activatePreset(name) {
+		this.activePreset = name
+		this.updatePresetSelect()
+	}
+
+	_mi_preset(name) {
 		return `
-			<sp-menu-item value="${
-				preset.name
-			}"${
-				this.activePreset === preset.name ? ' selected="selected"' : ''
-			}>${preset.name}</sp-menu-item>
+			<sp-menu-item value="${name}"${
+				this.activePreset === name ? ' selected="selected"' : ''
+			}>${name}</sp-menu-item>
 		`;
 	}
 
-	updatePresetList() {
-		this.$picker.querySelector('sp-menu').innerHTML = `
-		${
-			this.presets.map(p => this._presetToMenuItem(p)).join('')
-		}
-		<sp-menu-divider></sp-menu-divider>
-		<sp-menu-item id="preset-rename" ${this.activePreset === 'Default' ? 'disabled':''}>Rename preset</sp-menu-item>
-		<sp-menu-item id="preset-duplicate">Duplicate preset</sp-menu-item>
-		<sp-menu-item id="preset-delete" ${this.activePreset === 'Default' ? 'disabled':''}>Delete preset</sp-menu-item>
+	_mi_divider() {
+		return `<sp-menu-divider></sp-menu-divider>`;
+	}
+
+	_mi_command({command, text, disabled}) {
+		return `
+			<sp-menu-item value="__command__${command}"${
+				disabled ? ' disabled="disabled"' : ''
+			}>${text}</sp-menu-item>
 		`;
-		this.$picker.setAttribute('value', this.activePreset)
-		console.log(this.$picker.value)
+	}
+
+	updatePresetSelect() {
+		const HTML = [
+			...Object.keys(this.presets).map(this._mi_preset.bind(this)),
+			this._mi_divider(),
+			this._mi_command({
+				command: 'rename',
+				text: 'Rename preset',
+				disabled: this.activePreset === 'Default'
+			}),
+			this._mi_command({
+				command: 'duplicate',
+				text: 'Duplicate preset'
+			}),
+			this._mi_command({
+				command: 'delete',
+				text: 'Delete preset',
+				disabled: this.activePreset === 'Default'
+			})
+		].join('')
+		this.$picker.querySelector('sp-menu').innerHTML = HTML
 	}
 }

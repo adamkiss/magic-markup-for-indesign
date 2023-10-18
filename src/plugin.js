@@ -42,11 +42,6 @@ class MagicMarkupPlugin {
 
 		// Add event listeners
 		this.runButton.addEventListener('click', this.actionRun.bind(this))
-		$('#test').addEventListener('click', _ => this.promptDialog.show({
-			title: "Rename the preset to:",
-			input: "New preset name",
-			onSuccess: (val) => console.log('success', val)
-		}));
 
 		// Add a menu item (?) to be targeted by a script 🙄
 		createMenuItem({
