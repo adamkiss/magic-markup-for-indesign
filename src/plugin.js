@@ -9,6 +9,7 @@ export default class MagicMarkupPlugin {
 	$els = {}
 	textareas = {}
 	app = null
+	listeners = []
 
 	document = null
 	scope = null
@@ -26,8 +27,8 @@ export default class MagicMarkupPlugin {
 		this.textareas.cstyles = new Textarea($('#cstyles'), false)
 
 		// Add event listeners
-		this.app.addEventListener('afterSelectionChanged', this.listenerSelectionChanged.bind(this))
-		this.app.addEventListener("afterContextChanged", this.listenerAfterContextChanged.bind(this));
+		this.listeners.push(this.app.addEventListener('afterSelectionChanged', this.listenerSelectionChanged.bind(this)))
+		this.listeners.push(this.app.addEventListener("afterContextChanged", this.listenerAfterContextChanged.bind(this)))
 		this.$els.runButton.addEventListener('click', this.actionRun.bind(this))
 
 		// Add a menu item (?) to be targeted by a script 🙄
@@ -35,6 +36,12 @@ export default class MagicMarkupPlugin {
 
 		// Fire off context change
 		this.listenerAfterContextChanged()
+	}
+
+	destroy() {
+		for (const listener of this.listeners) {
+			if (listener.isValid) listener.remove();
+		}
 	}
 
 	createAndAddMenuItem() {

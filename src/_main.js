@@ -2,9 +2,18 @@ const { entrypoints } = require("uxp");
 const { app } = require("indesign");
 
 import MagicMarkupPlugin from "./plugin";
-const plugin = new MagicMarkupPlugin(app);
+let plugin;
 
 entrypoints.setup({
+	plugin: {
+		async create() {
+			plugin = new MagicMarkupPlugin(app);
+		},
+		async destroy() {
+			plugin.destroy()
+			plugin = null
+		}
+	},
 	/** Also removed from manifest.json
 	{
 		"type": "command",
