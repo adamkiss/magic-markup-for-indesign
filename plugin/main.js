@@ -145,6 +145,7 @@
       try {
         const pluginMenu = this.app.menus.item("Main").submenus.item("Plug-Ins").submenus.item(PLUGIN_NAME);
         const existingMenuItem = pluginMenu.menuItems.itemByName("\u2728 Apply Magic Markup");
+        existingMenuItem.remove();
         if (!existingMenuItem.isValid) {
           this.menuItem = this.app.scriptMenuActions.add("\u2728 Apply Magic Markup");
           this.menuItem.addEventListener("onInvoke", this.actionRun.bind(this));
@@ -246,7 +247,6 @@
   var { entrypoints } = __require("uxp");
   var { app } = __require("indesign");
   var plugin = new MagicMarkupPlugin(app);
-  console.log(app);
   entrypoints.setup({
     /** Also removed from manifest.json
     {

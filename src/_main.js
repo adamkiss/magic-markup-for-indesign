@@ -4,8 +4,6 @@ const { app } = require("indesign");
 import MagicMarkupPlugin from "./plugin";
 const plugin = new MagicMarkupPlugin(app);
 
-console.log(app)
-
 entrypoints.setup({
 	/** Also removed from manifest.json
 	{
