@@ -2,7 +2,7 @@
 <html>
 
 <head>
-	<script src="./main.js"></script>
+	<script src="./plugin.js"></script>
 	<style>
 		:root {
 			--padding: 10px;
@@ -40,6 +40,17 @@
 			flex-grow: 1;
 		}
 
+		.w-full {
+			width: 100%;
+		}
+
+		sp-field-label {
+			color: inherit !important
+		}
+		sp-field-label > sp-detail {
+			margin-bottom: 0;
+		}
+
 		textarea {
 			display: block;
 			width: 100%;
@@ -56,6 +67,11 @@
 			);
 			caret-color: #f00;
 		}
+		input[type="text"] {
+			margin: 0;
+			width: 100%;
+			padding: 20px;
+		}
 
 		#scope {
 			padding-top: var(--padding);
@@ -69,7 +85,7 @@
 				background-color: #323232;
 				color: white;
 			}
-			textarea {
+			textarea, input[type="text"] {
 				background:  #2a2a2a !important;
 				color: white !important;
 			}
@@ -82,7 +98,7 @@
 				background-color: #535353;
 				color: white;
 			}
-			textarea {
+			textarea, input[type="text"] {
 				background:  #454545 !important;
 				color: white !important;
 			}
@@ -93,9 +109,9 @@
 			}
 			uxp-panel {
 				background-color: #b9b9b9;
-				color: white;
+				color: black !important;
 			}
-			textarea {
+			textarea, input[type="text"] {
 				background: #a3a3a3 !important;
 				color: black !important;
 			}
@@ -106,9 +122,9 @@
 			}
 			uxp-panel {
 				background-color: #f0f0f0;
-				color: white;
+				color: black !important;
 			}
-			textarea {
+			textarea, input[type="text"] {
 				background:  #dbdbdb !important;
 				color: black !important;
 			}
@@ -120,27 +136,63 @@
 	<uxp-panel panelid="magicMarkup">
 		<div class="flex">
 			<sp-detail id="scope" data-grow>SCOPE<br>…</sp-detail>
-			<sp-action-button variant="primary" id="button-run">
-				✨ Apply Magic
-			</sp-action-button>
+			<sp-action-button variant="primary" id="button-run" disabled>✨ Apply Magic</sp-action-button>
 		</div>
+
+		<sp-button variant="primary" id="test">Testit</sp-button>
 
 		<sp-divider></sp-divider>
 
-		<sp-detail>PARAGRAPH STYLES</sp-detail>
+		<sp-field-label for="presets"><sp-detail>PRESETS</sp-detail></sp-field-label>
+        <sp-picker id="presets" size="s" label="Preset selection" disabled class="w-full">
+			<label for="" slot="label">Hello</label>
+			<sp-menu slot="options"></sp-menu>
+		</sp-picker>
+		<select name="asdasd" id="asdasd">
+			<option value="1">1</option>
+			<option value="2">2</option>
+			<option value="---"></option>
+			<option value="3">3</option>
+			<option disabled>4</option>
+		</select>
+
+		<sp-divider></sp-divider>
+
+		<sp-field-label for="pstyles"><sp-detail>PARAGRAPH STYLES</sp-detail></sp-field-label>
 		<textarea id="pstyles" placeholder="Set up your paragraph styles"></textarea>
-		<sp-detail>CHARACTER STYLES</sp-detail>
+		<sp-field-label for="pstyles"><sp-detail>CHARACTER STYLES</sp-detail></sp-field-label>
 		<textarea id="cstyles" placeholder="Set up your Character styles"></textarea>
 
+		<sp-divider></sp-divider>
 
+		<sp-detail>Export/Import presets</sp-detail>
+		<sp-action-group size="s">
+			<sp-action-button>
+				<sp-icon size="s" name="ui:ChevronDownSmall"></sp-icon>
+				Export
+			</sp-action-button>
+			<sp-action-button>
+				<sp-icon size="s" name="ui:ChevronUpSmall"></sp-icon>
+				Import
+			</sp-action-button>
+		</sp-action-group>
+		<sp-body size="s">Export preset to clipboard, or Paste from clipboard</sp-body>
 	</uxp-panel>
 
-	<dialog id="confirm-document-selection" style="width: 570px">
-		<sp-heading>Whole document selected!</sp-heading>
-		<sp-body>Do you want to apply ✨ Magic to the whole document?</sp-body>
+	<dialog id="confirm" style="width: 570px">
+		<sp-heading size="s"></sp-heading>
+		<div id="confirm-body"></div>
 		<footer class="flex flex-end">
-			<sp-button variant="primary" id="confirm-selection-cancel">No</sp-button>
-			<sp-button variant="cta" id="confirm-selection-submit">Yes</sp-button>
+			<sp-button variant="primary" action="cancel">No</sp-button>
+			<sp-button variant="cta" action="confirm">Yes</sp-button>
+		</footer>
+	</dialog>
+	<dialog id="prompt" style="width: 570px">
+		<sp-field-label for="prompt-input"><sp-heading size="s"></sp-heading></sp-field-label>
+		<input type="text" id="prompt-input">
+		<footer class="flex flex-end">
+			<sp-button variant="primary" action="cancel">No</sp-button>
+			<sp-button variant="cta" action="confirm">Yes</sp-button>
 		</footer>
 	</dialog>
 </body>

@@ -1,151 +1,85 @@
 import Textarea from "./textarea";
 import {$, ensureParagraphStyles, ensureCharacterStyles} from "./utils";
+import createMenuItem from "./menu-item";
+import Scope from "./scope";
+import ConfirmDialog from "./dialog-confirm";
+import RunButton from "./button-run";
+import Presets from "./presets";
+import PromptDialog from "./dialog-prompt";
 
-const {ScriptLanguage, UndoModes, Document} = require("indesign");
-
+const {app, ScriptLanguage, UndoModes} = require("indesign");
 const PLUGIN_NAME = '🪄 Magic Markup';
 
-export default class MagicMarkupPlugin {
-	$els = {}
+// The plugin class
+class MagicMarkupPlugin {
+	PRODUCTION = false
+
 	textareas = {}
 	app = null
 	listeners = []
 
-	document = null
 	scope = null
-	scopeText = 'unknown'
+	runner = null
+	presets = null
+
+	rules = {
+		paragraph: [],
+		character: [],
+		invisibles: []
+	}
 
 	constructor(app) {
 		this.app = app
+		this.scope = new Scope(this)
+		this.runButton = new RunButton(this)
+		this.presets = new Presets(this)
 
-		// Get elements
-		this.$els = {
-			scopeDetail: $('sp-detail#scope'),
-			runButton: $('#button-run'),
-			confirmSelectionSubmit: $('#confirm-selection-submit'),
-			confirmSelectionCancel: $('#confirm-selection-cancel'),
-		}
+		this.confirmDialog = new ConfirmDialog()
+		this.promptDialog = new PromptDialog()
+
 		this.textareas.pstyles = new Textarea($('#pstyles'))
 		this.textareas.cstyles = new Textarea($('#cstyles'), false)
 
 		// Add event listeners
-		this.listeners.push(this.app.addEventListener('afterSelectionChanged', this.listenerSelectionChanged.bind(this)))
-		this.listeners.push(this.app.addEventListener("afterContextChanged", this.listenerAfterContextChanged.bind(this)))
-		this.$els.runButton.addEventListener('click', this.actionRun.bind(this))
-		this.$els.confirmSelectionSubmit.addEventListener('click', _ => {
-			$('#confirm-document-selection').close()
-			this.actionRun(true)
-		})
-		this.$els.confirmSelectionCancel.addEventListener('click', _ => $('#confirm-document-selection').close())
+		this.runButton.addEventListener('click', this.actionRun.bind(this))
+		$('#test').addEventListener('click', _ => this.promptDialog.show({
+			title: "Rename the preset to:",
+			input: "New preset name",
+			onSuccess: (val) => console.log('success', val)
+		}));
 
 		// Add a menu item (?) to be targeted by a script 🙄
-		this.createAndAddMenuItem()
+		createMenuItem({
+			app,
+			pluginName: PLUGIN_NAME,
+			menuItemName: '✨ Apply Magic Markup',
+			invokeCallback: this.actionRun.bind(this)
+		})
 
-		// Fire off context change
-		this.listenerAfterContextChanged()
+		// Fire of initial scope change
+		// this.onScopeChange()
 	}
 
 	destroy() {
-		for (const listener of this.listeners) {
-			if (listener.isValid) listener.remove();
-		}
+		console.log('destroying plugin')
 	}
 
-	createAndAddMenuItem() {
-		try {
-			const pluginMenu = this.app
-				.menus.item('Main')
-				.submenus.item('Plug-Ins')
-				.submenus.item(PLUGIN_NAME)
-
-			const existingMenuItem = pluginMenu.menuItems.itemByName("✨ Apply Magic Markup");
-			if (existingMenuItem.isValid) { existingMenuItem.remove() }
-			// ^ Keep if debugging/developing
-
-			if (! existingMenuItem.isValid) {
-				this.menuItem = this.app.scriptMenuActions.add("✨ Apply Magic Markup")
-				this.menuItem.addEventListener('onInvoke', this.actionRun.bind(this));
-				pluginMenu.menuItems.add(this.menuItem)
-			}
-		} catch (error) {
-			// Swallow the error
-			console.error(error)
-		}
-	}
-
-	showPanel() {
-		this.updateScope()
-	}
-
-	listenerSelectionChanged() {
-		this.updateScope()
-	}
-
-	listenerAfterContextChanged() {
-		this.updateScope()
-	}
-
-	updateScope() {
-		if (this.app.documents.length === 0) {
-			this.scope = null
-			this.scopeText = 'invalid'
-			return this.updateScopeUI()
-		}
-
-		if (this.app.selection.length === 0) {
-			this.scope = this.app.activeDocument
-			this.scopeText = 'document'
-			return this.updateScopeUI()
-		}
-
-		if (this.app.selection.length > 1) {
-			this.scope = null
-			this.scopeText = 'multiple (unsupported)'
-			return this.updateScopeUI()
-		}
-
-		// discard unsupport selection types
-		if (! [
-			'TextFrame', 'Text', 'InsertionPoint', 'TextStyleRange', 'TextColumn'
-		].includes(this.app.selection[0].constructor.name)) {
-			this.scope = null
-			this.scopeText = `${this.app.selection[0].constructor.name} (unsupported)`
-			return this.updateScopeUI()
-		}
-
-		// Set correct scope
-		if (['Text', 'TextStyleRange'].includes(this.app.selection[0].constructor.name)) {
-			this.scope = this.app.selection[0]
-			this.scopeText = 'selected text'
-			return this.updateScopeUI()
-		}
-
-		this.scope = this.app.selection[0].parentStory
-		this.scopeText = 'selected story'
-		return this.updateScopeUI()
-	}
-
-	updateScopeUI() {
-		this.setRunButtonDisabled(! this.scope)
-		this.$els.scopeDetail.innerHTML = `scope<br>${this.scopeText}`.toUpperCase()
-	}
-
-	setRunButtonDisabled(disabled = true) {
-		this.$els.runButton.disabled = disabled
-	}
+	showPanel() {}
 
 	actionRun(agreedToDocumentMagic = false) {
 		// Shouldn't happen, but…
 		if (! this.app.activeDocument) return
 		if (! this.scope) return
 
-		if (this.scope instanceof Document && agreedToDocumentMagic !== true) {
-			// Show modal to confirm document-wide application
-			$('#confirm-document-selection').showModal()
-			return;
+		if (this.scope.isDocument && agreedToDocumentMagic !== true) {
+			return this.confirmDialog.show({
+				title: 'Whole document selected!',
+				body: 'Are you sure you want to apply Magic Markup to the whole document?',
+				onSuccess: () => this.actionRun(true)
+			})
 		}
 
-		this.setRunButtonDisabled(true)
+		this.buttonRun.disabled = true
 
 		ensureParagraphStyles(this.app.activeDocument, this.textareas.pstyles.rules.map(rule => rule.style))
 		ensureCharacterStyles(this.app.activeDocument, this.textareas.cstyles.rules.map(rule => rule.style))
@@ -177,6 +111,9 @@ export default class MagicMarkupPlugin {
 
 		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Micro Markup to styles');
 
-		this.setRunButtonDisabled(false)
+		this.buttonRun.disabled = false
 	}
 }
+
+// Create a new instance of the plugin
+new MagicMarkupPlugin(app)
