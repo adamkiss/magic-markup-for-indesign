@@ -4,8 +4,8 @@
   "description": "Default template for creating Adobe UXP based InDesign plugin.",
   "main": "index.js",
   "scripts": {
-    "start": "esbuild --bundle --watch src/plugin.js --external:uxp --external:indesign --outfile=plugin/main.js",
-    "build": "esbuild --bundle --target=es6 src/plugin.js --external:uxp --external:indesign --outfile=plugin/main.js"
+    "start": "esbuild --bundle --watch main=src/_main.js index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy",
+    "build": "esbuild --bundle --target=es6 main=src/_main.js index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy"
   },
   "repository": {
     "type": "git",
@@ -20,8 +20,5 @@
   ],
   "devDependencies": {
     "esbuild": "^0.19.5"
-  },
-  "dependencies": {
-    "highlight-in-textarea": "^1.1.0"
   }
 }

@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-dependencies:
-  highlight-in-textarea:
-    specifier: ^1.1.0
-    version: 1.1.0
-
 devDependencies:
   esbuild:
     specifier: ^0.19.5
@@ -243,7 +238,3 @@ packages:
       '@esbuild/win32-ia32': 0.19.5
       '@esbuild/win32-x64': 0.19.5
     dev: true
-
-  /highlight-in-textarea@1.1.0:
-    resolution: {integrity: sha512-51vWkdIlyHXH5tnx6JnRy1rrQbCnSbVO4wSFcDTubh7q1yFut2DLt+kC4aMyfGCi5OAjzL5D27FU8unFnoLCjw==}
-    dev: false

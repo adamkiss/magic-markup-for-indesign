@@ -1,8 +1,17 @@
 export default class Textarea {
 	static MIN_HEIGHT = 5
+	static MATCHER_SINGLE = /^(.+):\s*(.+)$/
+	static MATCHER_BEGIN_END = /^(.+):(.+):\s*(.+)$/
 
-	constructor($element) {
+	paragraphStyles = true
+	$ = null
+	document = null
+
+	rules = []
+
+	constructor($element, paragraphStyles = true) {
 		this.$ = $element
+		this.paragraphStyles = paragraphStyles
 
 		this.$.addEventListener('input', this.input.bind(this))
 		this.$.addEventListener('keydown', this.keydown.bind(this))
@@ -11,8 +20,43 @@ export default class Textarea {
 		this.autosize()
 	}
 
+	parse() {
+		this.rules = this.paragraphStyles
+			? this.parseParagraphStyles()
+			: this.parseCharacterStyles()
+	}
+
+	parseCharacterStyles() {
+		const rules = []
+		for (const line of this.lines) {
+			if (!line.trim()) continue
+			if (!line.includes(':')) continue
+
+			if (line.match(Textarea.MATCHER_BEGIN_END)) {
+				const [begin, end, value] = line.match(Textarea.MATCHER_BEGIN_END).slice(1)
+				rules.push({find: `${begin}(.*?)${end}`, style: value.trim()})
+			} else if (line.match(Textarea.MATCHER_SINGLE)) {
+				const [key, value] = line.match(Textarea.MATCHER_SINGLE).slice(1)
+				rules.push({find: `${key}(.*?)${key}`, style: value.trim()})
+			}
+		}
+		return rules
+	}
+
+	parseParagraphStyles() {
+		const rules = []
+		for (const line of this.lines) {
+			if (! line.match(Textarea.MATCHER_SINGLE)) continue
+
+			const [key, value] = line.match(Textarea.MATCHER_SINGLE).slice(1)
+			rules.push({find: `^${key}(.*?)\$`, style: value.trim()})
+		}
+		return rules
+	}
+
 	input() {
 		this.autosize()
+		this.parse()
 		this.save()
 	}
 
@@ -45,6 +89,7 @@ export default class Textarea {
 
 	load() {
 		this.$.value = localStorage.getItem(this.$.id) || ''
+		this.parse()
 	}
 
 	save() {
