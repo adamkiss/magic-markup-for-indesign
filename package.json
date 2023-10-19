@@ -4,8 +4,8 @@
   "description": "Magically convert markup to styles",
   "main": "index.js",
   "scripts": {
-    "start": "esbuild --bundle --watch plugin=src/plugin.js index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy",
-    "build": "esbuild --bundle --target=es6 plugin=src/plugin.js index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy"
+    "start": "esbuild --bundle --watch plugin=src/plugin.js style=src/style.css index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy --loader:.css=copy",
+    "build": "esbuild --bundle --target=es6 plugin=src/plugin.js style=src/style.css index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy --loader:.css=copy"
   },
   "author": "Adam Kiss",
   "license": "MIT",

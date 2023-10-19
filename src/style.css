@@ -1,0 +1,174 @@
+/*******************************************************************************************
+	VARIABLES
+********************************************************************************************/
+:root {
+	--padding: 10px;
+	--textarea-font-size: 14px;
+	--textarea-line-height: 1.4;
+}
+
+/*******************************************************************************************
+	MAIN PANEL
+********************************************************************************************/
+uxp-panel {
+	font-size: var(--textarea-font-size);
+	line-height: var(--textarea-line-height);
+	padding: 9px;
+	overflow-y: scroll;
+}
+uxp-panel > * + *{
+	margin-top: var(--padding) !important;
+}
+
+/*******************************************************************************************
+	UTILITITES
+********************************************************************************************/
+label {
+	display: block;
+}
+
+.flex, #button-run {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.flex-end {
+	justify-content: flex-end;
+}
+.flex > [data-grow] {
+	flex-grow: 1;
+}
+
+.w-full {
+	width: 100%;
+}
+
+.relative {
+	position: relative;
+}
+.font-normal {
+	font-weight: normal;
+}
+
+/*******************************************************************************************
+	COMPONENTS
+********************************************************************************************/
+sp-field-label { color: inherit !important; }
+sp-field-label > sp-detail { margin-bottom: 0; }
+
+sp-switch {
+	margin-top: -10px;
+	margin-bottom: 0;
+}
+
+textarea {
+	display: block;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+	font-size: var(--textarea-font-size);
+	line-height: var(--textarea-line-height);
+	font-variant: normal;
+	font-family: 'SF Mono Regular', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+	line-height: var(--textarea-line-height);
+	min-height: calc(
+		var(--padding) * 2
+		+ (var(--textarea-font-size) * var(--textarea-line-height)) * 4
+	);
+	caret-color: #f00;
+}
+
+input[type="text"] {
+	margin: 0;
+	padd: 2px;
+}
+
+#scope {
+	padding-top: var(--padding);
+}
+#storage-active {
+	display: block;
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+/*******************************************************************************************
+	DIALOGS
+********************************************************************************************/
+
+dialog input[type="text"] {
+	margin-top: var(--padding);
+	width: 100%;
+	padding: 20px;
+}
+
+dialog[id^="cheatsheet-"] {
+
+}
+dialog[id^="cheatsheet-"] header > sp-heading { margin-top: 0; }
+dialog[id^="cheatsheet-"] header > button { margin-top: 0; margin-left: 4px; margin-right: -4px; margin-bottom: -2px; }
+
+/*******************************************************************************************
+	THEMING SUPPORT
+********************************************************************************************/
+@media (prefers-color-scheme: darkest) {
+	body {
+		background: #262626;
+	}
+	uxp-panel {
+		background-color: #323232;
+		color: white;
+	}
+	textarea, input[type="text"] {
+		background:  #2a2a2a !important;
+		color: white !important;
+	}
+	.disabled {color: #fff2;}
+	.low-opacity {color: #fff7;}
+}
+@media (prefers-color-scheme: dark) {
+	body {
+		background: #454545;
+	}
+	uxp-panel {
+		background-color: #535353;
+		color: white;
+	}
+	textarea, input[type="text"] {
+		background:  #454545 !important;
+		color: white !important;
+	}
+	.disabled {color: #fff4;}
+	.low-opacity {color: #fff8;}
+}
+@media (prefers-color-scheme: light) {
+	body {
+		background: #a3a3a3;
+	}
+	uxp-panel {
+		background-color: #b9b9b9;
+		color: black !important;
+	}
+	textarea, input[type="text"] {
+		background: #a3a3a3 !important;
+		color: black !important;
+	}
+	.disabled {color: #0005;}
+	.low-opacity {color: #0007;}
+}
+@media (prefers-color-scheme: lightest) {
+	body {
+		background: #dbdbdb;
+	}
+	uxp-panel {
+		background-color: #f0f0f0;
+		color: black !important;
+	}
+	textarea, input[type="text"] {
+		background:  #dbdbdb !important;
+		color: black !important;
+	}
+	.disabled {color: #0004;}
+	.low-opacity {color: #0006;}
+}

@@ -362,7 +362,7 @@
       this.$inputOpen.disabled = !this.toggled;
       this.$inputClose.disabled = !this.toggled;
       for (const $label of this.$labels) {
-        $label.classList.toggle("low-opacity", !this.toggled);
+        $label.classList.toggle("disabled", !this.toggled);
       }
       this.onChangeFn({ invisibles: this.value });
     }
@@ -694,7 +694,7 @@
 
   // src/plugin.js
   var { app, ScriptLanguage, UndoModes } = __require("indesign");
-  var { shell } = __require("uxp");
+  var { shell, entrypoints } = __require("uxp");
   var PLUGIN_NAME = "\u{1F308} Magic Markup";
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
@@ -722,9 +722,12 @@
         menuItemName: "\u2728 Apply Magic Markup",
         invokeCallback: this.applyMagic.bind(this)
       });
-      $("#info .name").textContent = `${PLUGIN_NAME} v${PLUGIN_VERSION}`;
+      $("#info .version").textContent = `\u{1F308} v${PLUGIN_VERSION}`;
       $("#info .help").addEventListener("click", async (_) => {
         await shell.openExternal("https://github.com/adamkiss/magic-markup-for-indesign#readme");
+      });
+      $("#info .cheatsheet").addEventListener("click", (_) => {
+        $("#cheatsheet-002").showModal();
       });
     }
     destroy() {
@@ -775,4 +778,11 @@
     }
   };
   new MagicMarkupPlugin(app);
+  entrypoints.setup({
+    commands: {
+      applyMagic: () => {
+        console.log("applyMagic");
+      }
+    }
+  });
 })();

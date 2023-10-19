@@ -27,7 +27,7 @@ export default class Invisibles extends EventTarget {
 		this.$inputOpen.disabled = !this.toggled
 		this.$inputClose.disabled = !this.toggled
 		for (const $label of this.$labels) {
-			$label.classList.toggle('low-opacity', !this.toggled)
+			$label.classList.toggle('disabled', !this.toggled)
 		}
 
 		this.onChangeFn({invisibles: this.value})

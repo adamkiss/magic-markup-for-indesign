@@ -3,180 +3,15 @@
 
 <head>
 	<script src="./plugin.js"></script>
-	<style>
-		:root {
-			--padding: 10px;
-			--textarea-font-size: 14px;
-			--textarea-line-height: 1.4;
-		}
-
-		uxp-panel {
-			font-size: var(--textarea-font-size);
-			line-height: var(--textarea-line-height);
-			padding: 9px;
-			overflow-y: scroll;
-		}
-		uxp-panel > * + *{
-			margin-top: var(--padding) !important;
-		}
-
-		label {
-			display: block;
-		}
-
-		.flex, #button-run {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-		}
-		.flex-end {
-			justify-content: flex-end;
-		}
-		.flex > * + * {
-			flex-shrink: 0;
-			margin-left: var(--padding);
-		}
-		.flex > [data-grow] {
-			flex-grow: 1;
-		}
-
-		.w-full {
-			width: 100%;
-		}
-
-		.relative {
-			position: relative;
-		}
-		.font-normal {
-			font-weight: normal;
-		}
-
-		sp-detail {
-			text-transform: uppercase;
-		}
-
-		sp-field-label {
-			color: inherit !important;
-		}
-		sp-field-label > sp-detail {
-			margin-bottom: 0;
-		}
-		sp-switch {
-			margin-top: -10px;
-			margin-bottom: 0;
-		}
-
-		textarea {
-			display: block;
-			width: 100%;
-			padding: 0;
-			margin: 0;
-			font-size: var(--textarea-font-size);
-			line-height: var(--textarea-line-height);
-			font-variant: normal;
-			font-family: 'SF Mono Regular', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace;
-			line-height: var(--textarea-line-height);
-			min-height: calc(
-				var(--padding) * 2
-				+ (var(--textarea-font-size) * var(--textarea-line-height)) * 4
-			);
-			caret-color: #f00;
-		}
-		input[type="text"] {
-			margin: 0;
-			padd: 2px;
-		}
-		dialog input[type="text"] {
-			margin-top: var(--padding);
-			width: 100%;
-			padding: 20px;
-		}
-		.low-opacity {
-			color: #fff2;
-		}
-
-		#scope {
-			padding-top: var(--padding);
-		}
-		#storage-active {
-			display: block;
-			position: absolute;
-			top: 0;
-			right: 0;
-		}
-
-		@media (prefers-color-scheme: darkest) {
-			body {
-				background: #262626;
-			}
-			uxp-panel {
-				background-color: #323232;
-				color: white;
-			}
-			textarea, input[type="text"] {
-				background:  #2a2a2a !important;
-				color: white !important;
-			}
-			.low-opacity {
-				color: #fff2;
-			}
-		}
-		@media (prefers-color-scheme: dark) {
-			body {
-				background: #454545;
-			}
-			uxp-panel {
-				background-color: #535353;
-				color: white;
-			}
-			textarea, input[type="text"] {
-				background:  #454545 !important;
-				color: white !important;
-			}
-			.low-opacity {
-				color: #fff2;
-			}
-		}
-		@media (prefers-color-scheme: light) {
-			body {
-				background: #a3a3a3;
-			}
-			uxp-panel {
-				background-color: #b9b9b9;
-				color: black !important;
-			}
-			textarea, input[type="text"] {
-				background: #a3a3a3 !important;
-				color: black !important;
-			}
-			.low-opacity {
-				color: #0002;
-			}
-		}
-		@media (prefers-color-scheme: lightest) {
-			body {
-				background: #dbdbdb;
-			}
-			uxp-panel {
-				background-color: #f0f0f0;
-				color: black !important;
-			}
-			textarea, input[type="text"] {
-				background:  #dbdbdb !important;
-				color: black !important;
-			}
-			.low-opacity {
-				color: #0002;
-			}
-		}
-	</style>
+	<link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
+	<!-- MAIN PANEL -->
 	<uxp-panel panelid="magicMarkup">
 		<div class="flex">
 			<sp-detail id="scope" data-grow>LOADING</sp-detail>
-			<sp-action-button variant="primary" id="button-run" disabled>✨ Apply Magic</sp-action-button>
+			<sp-action-button variant="primary" id="button-run" disabled>✨ Apply</sp-action-button>
 		</div>
 
 		<sp-divider></sp-divider>
@@ -196,21 +31,21 @@
 		<sp-field-label for="pstyles"><sp-detail>CHARACTER STYLES</sp-detail></sp-field-label>
 		<textarea id="cstyles" placeholder="Set up your Character styles"></textarea>
 		<sp-field-label for="invisibles-switch" class="flex">
-			<sp-detail class="low-opacity">INVISIBLES REPLACEMENT</sp-detail>
+			<sp-detail class="disabled">INVISIBLES REPLACEMENT</sp-detail>
 			<sp-switch id="invisibles-switch"></sp-switch>
 		</sp-field-label>
 		<div class="flex">
 			<sp-field-label for="invisibles-open">
-				<sp-detail class="low-opacity font-normal">OPEN WITH</sp-detail>
+				<sp-detail class="disabled font-normal">OPEN WITH</sp-detail>
 			</sp-field-label>
 			<input width="40px" type="text" name="invisibles-open" id="invisibles-open" value="[" disabled>
 			<sp-field-label for="invisibles-close" >
-				<sp-detail class="low-opacity font-normal">CLOSE WITH</sp-detail>
+				<sp-detail class="disabled font-normal">CLOSE WITH</sp-detail>
 			</sp-field-label>
 			<input width="40px" type="text" name="invisibles-close" id="invisibles-close" value="]" disabled>
 		</div>
 
-		<!-- <sp-divider></sp-divider>
+		<!-- COMING IN THE FUTURE <sp-divider></sp-divider>
 
 		<sp-detail>Export/Import presets</sp-detail>
 		<sp-action-group size="s">
@@ -227,10 +62,16 @@
 
 		<sp-divider></sp-divider>
 
-		<sp-body size="s" id="info"><span class="name"></span> by Adam Kiss <button class="help">Help & Tutorial</button></sp-body>
+		<div size="s" id="info" class="flex ">
+			<button class="cheatsheet">Cheatsheet</button>
+			<button class="help">Help</button>
+			<span data-grow=""> </span>
+			<span class="version low-opacity"></span>
+		</div>
 	</uxp-panel>
 
-	<dialog id="confirm" style="width: 570px">
+	<!-- CONFIRM DIALOG -->
+	<dialog id="confirm" style="width: 570px" autofocus>
 		<sp-heading size="s"></sp-heading>
 		<div id="confirm-body"></div>
 		<footer class="flex flex-end">
@@ -238,13 +79,25 @@
 			<sp-button variant="cta" action="confirm">Yes</sp-button>
 		</footer>
 	</dialog>
+	<!-- PROMPT DIALOG -->
 	<dialog id="prompt" style="width: 570px">
 		<sp-field-label for="prompt-input"><sp-heading size="s"></sp-heading></sp-field-label>
-		<input type="text" id="prompt-input">
+		<input type="text" id="prompt-input" autofocus>
 		<footer class="flex flex-end">
 			<sp-button variant="primary" action="cancel">No</sp-button>
 			<sp-button variant="cta" action="confirm">Yes</sp-button>
 		</footer>
+	</dialog>
+	<!-- CHEATSHEET -->
+	<dialog id="cheatsheet-002">
+		<form action="" method="dialog">
+			<header class="flex" style="align-items: center;">
+				<sp-heading data-grow>🌈 Magic Markup Cheatsheet</sp-heading>
+				<button type="submit">Close</button>
+			</header>
+			<sp-divider size="medium"></sp-divider>
+
+		</form>
 	</dialog>
 </body>
 </html>

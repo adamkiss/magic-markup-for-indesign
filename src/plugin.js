@@ -8,7 +8,7 @@ import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
 
 const {app, ScriptLanguage, UndoModes} = require("indesign");
-const {shell} = require('uxp');
+const {shell, entrypoints} = require('uxp');
 const PLUGIN_NAME = '🌈 Magic Markup';
 const PLUGIN_VERSION = require('uxp').versions.plugin;
 
@@ -48,11 +48,12 @@ class MagicMarkupPlugin {
 			invokeCallback: this.applyMagic.bind(this)
 		})
 
-		// Readme/version info
-		$('#info .name').textContent = `${PLUGIN_NAME} v${PLUGIN_VERSION}`
+		// HELP/INFO
+		$('#info .version').textContent = `🌈 v${PLUGIN_VERSION}`
 		$('#info .help').addEventListener('click', async _ => {
 			await shell.openExternal('https://github.com/adamkiss/magic-markup-for-indesign#readme')
 		})
+		$('#info .cheatsheet').addEventListener('click', _ => {$('#cheatsheet-002').showModal()})
 	}
 
 	destroy() {}
@@ -113,3 +114,11 @@ class MagicMarkupPlugin {
 
 // Create a new instance of the plugin
 new MagicMarkupPlugin(app)
+
+entrypoints.setup({
+	commands: {
+		applyMagic: () => {
+			console.log('applyMagic')
+		}
+	}
+});
