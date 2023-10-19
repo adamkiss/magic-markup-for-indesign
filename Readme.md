@@ -39,6 +39,7 @@ __: Underlined
 _-:-_: Snake
 ```
 
+- Would Match `_-Snakey snake-_`
 - Both patterns - the beginning and the end - are accepted as they are (including spaces)
 - Both patterns must have at least one character, but are greedy, so:
 	- `:::: Woot` would parse as `[':', split, ':', split, 'Woot']`
