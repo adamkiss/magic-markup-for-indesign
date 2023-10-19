@@ -14,6 +14,9 @@
   function $$(selector) {
     return document.querySelectorAll(selector);
   }
+  function esc(str) {
+    return str.replace(/([.^$*+?~()\[\]{}\\|])/g, "\\$1");
+  }
   function ensureParagraphStyles(document2, names) {
     const paraStyles = document2.paragraphStyles;
     names.map((name) => {
@@ -344,6 +347,19 @@
 
   // src/invisibles.js
   var Invisibles = class extends EventTarget {
+    static CODES = {
+      "Discretionary Hyphen": { char: "~-", code: "dh" },
+      "Nonbreaking Hyphen": { char: "~~", code: "nbh" },
+      "Flush Space": { char: "~f", code: "fs" },
+      "Hair Space": { char: "~|", code: "hs" },
+      "Forced Line Break": { char: "\\n", code: "flb" },
+      "Column Break": { char: "~M", code: "cb" },
+      "Frame Break": { char: "~R", code: "fb" },
+      "Page Break": { char: "~P", code: "pb" },
+      "Tab": { char: "\\t", code: "tab" },
+      "Right Indent Tab": { char: "~y", code: "rit" },
+      "Indent to Here": { char: "~i", code: "ith" }
+    };
     toggled = false;
     onChangeFn = null;
     constructor({ onChange }) {
@@ -762,6 +778,18 @@
           { findWhat: rule.find },
           { changeTo: "$1", appliedCharacterStyle: rule.style }
         ]);
+      }
+      if (config.invisibles?.toggled === true && config.invisibles?.open && config.invisibles?.close) {
+        const cio = config.invisibles.open;
+        const cic = config.invisibles.close;
+        for (const key in Invisibles.CODES) {
+          const { char, code } = Invisibles.CODES[key];
+          console.log(`${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}`);
+          greps.push([
+            { findWhat: `${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}` },
+            { changeTo: char }
+          ]);
+        }
       }
       this.app.doScript(() => {
         for (const [findPrefs, changePrefs] of greps) {

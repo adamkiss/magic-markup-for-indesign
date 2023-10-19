@@ -1,4 +1,4 @@
-import {$, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences, createMenuItem, cleanUpMenuItems} from "./utils";
+import {$, esc, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences, createMenuItem, cleanUpMenuItems} from "./utils";
 
 import Scope from "./scope";
 import Presets from "./presets";
@@ -6,6 +6,7 @@ import Presets from "./presets";
 import RunButton from "./button-run";
 import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
+import Invisibles from "./invisibles";
 
 const {app, ScriptLanguage, UndoModes} = require("indesign");
 const {shell, entrypoints} = require('uxp');
@@ -90,6 +91,19 @@ class MagicMarkupPlugin {
 				{findWhat: rule.find},
 				{changeTo: '$1', appliedCharacterStyle: rule.style},
 			]);
+		}
+		if (config.invisibles?.toggled === true && config.invisibles?.open && config.invisibles?.close) {
+			const cio = config.invisibles.open
+			const cic = config.invisibles.close
+
+			for (const key in Invisibles.CODES) {
+				const {char, code} = Invisibles.CODES[key]
+				console.log(`${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}`)
+				greps.push([
+					{findWhat: `${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}`},
+					{changeTo: char}
+				])
+			}
 		}
 
 		this.app.doScript(() => {

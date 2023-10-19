@@ -1,7 +1,21 @@
 import { $, $$ } from './utils.js'
 
-
 export default class Invisibles extends EventTarget {
+	static CODES =
+	{
+		'Discretionary Hyphen': {char: '~-', code: 'dh'},
+		'Nonbreaking Hyphen': {char: '~~', code: 'nbh'},
+		'Flush Space': {char: '~f', code: 'fs'},
+		'Hair Space': {char: '~|', code: 'hs'},
+		'Forced Line Break': {char: '\\n', code: 'flb'},
+		'Column Break': {char: '~M', code: 'cb'},
+		'Frame Break': {char: '~R', code: 'fb'},
+		'Page Break': {char: '~P', code: 'pb'},
+		'Tab': {char: '\\t', code: 'tab'},
+		'Right Indent Tab': {char: '~y', code: 'rit'},
+		'Indent to Here': {char: '~i', code: 'ith'},
+	}
+
 	toggled = false
 	onChangeFn = null
 
