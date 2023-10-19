@@ -2,6 +2,7 @@ const {Application} = require('indesign')
 
 import Storage from "./storage";
 import Textarea from "./textarea";
+import Invisibles from "./invisibles";
 import { $ } from "./utils";
 
 /**
@@ -44,6 +45,9 @@ export default class Presets extends EventTarget {
 			$element: $('#cstyles'),
 			parseAsParagraphStyles: false,
 			onChange: ({rules, raw}) => this.onPresetChanged('character', {rules, raw})
+		})
+		this.invisibles = new Invisibles({
+			onChange: ({invisibles}) => this.onPresetChanged('invisibles', invisibles)
 		})
 	}
 
@@ -103,9 +107,14 @@ export default class Presets extends EventTarget {
 		}
 	}
 
-	onPresetChanged(type, {rules, raw}) {
-		this.activeConfiguration[type] = rules
-		this.activeConfiguration[`${type}Raw`] = raw
+	onPresetChanged(type, value) {
+		if (type === 'invisibles') {
+			this.activeConfiguration.invisibles = value
+		} else if (['paragraph', 'character'].includes(type)) {
+			const {rules, raw} = value
+			this.activeConfiguration[type] = rules
+			this.activeConfiguration[`${type}Raw`] = raw
+		} else {}
 		this.saveToStorage()
 	}
 
@@ -214,7 +223,9 @@ export default class Presets extends EventTarget {
 	}
 
 	updatePresetConfig() {
+		console.log(this)
 		this.$paraStyles.value = this.activeConfiguration.paragraphRaw || ''
 		this.$charStyles.value = this.activeConfiguration.characterRaw || ''
+		this.invisibles.value = this.activeConfiguration.invisibles || {toggled: false, open: '<', close: '>'}
 	}
 }

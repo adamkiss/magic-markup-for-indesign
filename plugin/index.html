@@ -47,6 +47,9 @@
 		.relative {
 			position: relative;
 		}
+		.font-normal {
+			font-weight: normal;
+		}
 
 		sp-detail {
 			text-transform: uppercase;
@@ -56,6 +59,10 @@
 			color: inherit !important;
 		}
 		sp-field-label > sp-detail {
+			margin-bottom: 0;
+		}
+		sp-switch {
+			margin-top: -10px;
 			margin-bottom: 0;
 		}
 
@@ -77,8 +84,15 @@
 		}
 		input[type="text"] {
 			margin: 0;
+			padd: 2px;
+		}
+		dialog input[type="text"] {
+			margin-top: var(--padding);
 			width: 100%;
 			padding: 20px;
+		}
+		.low-opacity {
+			color: #fff2;
 		}
 
 		#scope {
@@ -103,6 +117,9 @@
 				background:  #2a2a2a !important;
 				color: white !important;
 			}
+			.low-opacity {
+				color: #fff2;
+			}
 		}
 		@media (prefers-color-scheme: dark) {
 			body {
@@ -115,6 +132,9 @@
 			textarea, input[type="text"] {
 				background:  #454545 !important;
 				color: white !important;
+			}
+			.low-opacity {
+				color: #fff2;
 			}
 		}
 		@media (prefers-color-scheme: light) {
@@ -129,6 +149,9 @@
 				background: #a3a3a3 !important;
 				color: black !important;
 			}
+			.low-opacity {
+				color: #0002;
+			}
 		}
 		@media (prefers-color-scheme: lightest) {
 			body {
@@ -141,6 +164,9 @@
 			textarea, input[type="text"] {
 				background:  #dbdbdb !important;
 				color: black !important;
+			}
+			.low-opacity {
+				color: #0002;
 			}
 		}
 	</style>
@@ -169,6 +195,20 @@
 		<textarea id="pstyles" placeholder="Set up your paragraph styles"></textarea>
 		<sp-field-label for="pstyles"><sp-detail>CHARACTER STYLES</sp-detail></sp-field-label>
 		<textarea id="cstyles" placeholder="Set up your Character styles"></textarea>
+		<sp-field-label for="invisibles-switch" class="flex">
+			<sp-detail class="low-opacity">INVISIBLES REPLACEMENT</sp-detail>
+			<sp-switch id="invisibles-switch"></sp-switch>
+		</sp-field-label>
+		<div class="flex">
+			<sp-field-label for="invisibles-open">
+				<sp-detail class="low-opacity font-normal">OPEN WITH</sp-detail>
+			</sp-field-label>
+			<input width="40px" type="text" name="invisibles-open" id="invisibles-open" value="[" disabled>
+			<sp-field-label for="invisibles-close" >
+				<sp-detail class="low-opacity font-normal">CLOSE WITH</sp-detail>
+			</sp-field-label>
+			<input width="40px" type="text" name="invisibles-close" id="invisibles-close" value="]" disabled>
+		</div>
 
 		<!-- <sp-divider></sp-divider>
 
