@@ -1,0 +1,23 @@
+GREP characters:
+
+^^^ This should be header
+
+~~~ smaller subtitle paragraph
+
+this line should have: .dot.Red.dot. dot Black dot ~wave~Red~wave~ Black \backslash\Red\backslash\ Black ^caret^Red^caret^ Black $\Red/$
+
+$$$ Also header
+
+Rules:
+
+^^^ : Header 1
+$$$ : Header 1
+~~~ : Subtitle
+
+.dot.: Red
+~wave~: Red
+\backslash\: Red
+^caret^: Red
+$\:/$: Red
+
+invisibles whatever
