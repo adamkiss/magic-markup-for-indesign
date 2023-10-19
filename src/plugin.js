@@ -10,7 +10,7 @@ import PromptDialog from "./dialog-prompt";
 
 const {app, ScriptLanguage, UndoModes} = require("indesign");
 const {shell} = require('uxp');
-const PLUGIN_NAME = '🪄 Magic Markup';
+const PLUGIN_NAME = '🌈 Magic Markup';
 const PLUGIN_VERSION = require('uxp').versions.plugin;
 
 // The plugin class
