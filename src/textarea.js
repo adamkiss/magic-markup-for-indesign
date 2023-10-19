@@ -1,3 +1,10 @@
+import { esc } from "./utils"
+
+/**
+ * Responsible for wiring up the Styles textareas
+ *
+ * Also generates partial rules for the grep: Pattern and Style name
+ */
 export default class Textarea {
 	static MIN_HEIGHT = 5
 	static MATCHER_SINGLE = /^(.+):\s*(.+)$/
@@ -30,16 +37,26 @@ export default class Textarea {
 
 	parseCharacterStyles() {
 		const rules = []
-		for (const line of this.lines) {
+		for (let line of this.lines) {
 			if (!line.trim()) continue
 			if (!line.includes(':')) continue
 
+			const raw = line.startsWith('raw:')
+			if (raw) line = line.replace(/^raw:/, '')
+
 			if (line.match(Textarea.MATCHER_BEGIN_END)) {
+
 				const [begin, end, value] = line.match(Textarea.MATCHER_BEGIN_END).slice(1)
-				rules.push({find: `${begin}(.*?)${end}`, style: value.trim()})
+				const b = raw ? begin : esc(begin)
+				const e = raw ? end : esc(end)
+				rules.push({find: `${b}(.*?)${e}`, style: value.trim()})
+
 			} else if (line.match(Textarea.MATCHER_SINGLE)) {
+
 				const [key, value] = line.match(Textarea.MATCHER_SINGLE).slice(1)
-				rules.push({find: `${key}(.*?)${key}`, style: value.trim()})
+				const k = raw ? key : esc(key)
+				rules.push({find: `${k}(.*?)${k}`, style: value.trim()})
+
 			}
 		}
 		return rules
@@ -47,11 +64,15 @@ export default class Textarea {
 
 	parseParagraphStyles() {
 		const rules = []
-		for (const line of this.lines) {
+		for (let line of this.lines) {
+			const raw = line.startsWith('raw:')
+			if (raw) line = line.replace(/^raw:/, '')
+
 			if (! line.match(Textarea.MATCHER_SINGLE)) continue
 
 			const [key, value] = line.match(Textarea.MATCHER_SINGLE).slice(1)
-			rules.push({find: `^${key}(.*?)\$`, style: value.trim()})
+			const k = raw ? key : esc(key)
+			rules.push({find: `^${k}(.*?)\$`, style: value.trim()})
 		}
 		return rules
 	}
