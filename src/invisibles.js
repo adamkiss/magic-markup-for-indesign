@@ -38,7 +38,6 @@ export default class Invisibles extends EventTarget {
 	}
 
 	get value() {
-		console.log(this.$inputOpen.value, this.$inputClose.value)
 		return {
 			toggled: this.toggled,
 			open: this.$inputOpen.value,
@@ -47,8 +46,6 @@ export default class Invisibles extends EventTarget {
 	}
 
 	set value({toggled, open, close}) {
-		console.log(this.$inputOpen.value, this.$inputClose.value)
-
 		this.toggled = toggled
 		this.$toggle.checked = toggled
 		this.$inputOpen.value = open

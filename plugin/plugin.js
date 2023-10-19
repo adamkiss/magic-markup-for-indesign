@@ -347,7 +347,6 @@
       this.onChangeFn({ invisibles: this.value });
     }
     get value() {
-      console.log(this.$inputOpen.value, this.$inputClose.value);
       return {
         toggled: this.toggled,
         open: this.$inputOpen.value,
@@ -355,7 +354,6 @@
       };
     }
     set value({ toggled, open, close }) {
-      console.log(this.$inputOpen.value, this.$inputClose.value);
       this.toggled = toggled;
       this.$toggle.checked = toggled;
       this.$inputOpen.value = open;
@@ -545,7 +543,6 @@
       this.$picker.querySelector("sp-menu").innerHTML = HTML;
     }
     updatePresetConfig() {
-      console.log(this);
       this.$paraStyles.value = this.activeConfiguration.paragraphRaw || "";
       this.$charStyles.value = this.activeConfiguration.characterRaw || "";
       this.invisibles.value = this.activeConfiguration.invisibles || { toggled: false, open: "<", close: ">" };

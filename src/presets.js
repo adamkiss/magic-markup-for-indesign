@@ -223,7 +223,6 @@ export default class Presets extends EventTarget {
 	}
 
 	updatePresetConfig() {
-		console.log(this)
 		this.$paraStyles.value = this.activeConfiguration.paragraphRaw || ''
 		this.$charStyles.value = this.activeConfiguration.characterRaw || ''
 		this.invisibles.value = this.activeConfiguration.invisibles || {toggled: false, open: '<', close: '>'}
