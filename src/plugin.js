@@ -1,10 +1,12 @@
-import Textarea from "./textarea";
 import {$, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences} from "./utils";
 import createMenuItem from "./menu-item";
+
 import Scope from "./scope";
-import ConfirmDialog from "./dialog-confirm";
-import RunButton from "./button-run";
 import Presets from "./presets";
+
+import RunButton from "./button-run";
+import Textarea from "./textarea";
+import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
 
 const {app, ScriptLanguage, UndoModes} = require("indesign");
@@ -13,6 +15,7 @@ const PLUGIN_NAME = '🪄 Magic Markup';
 // The plugin class
 class MagicMarkupPlugin {
 	PRODUCTION = false
+	loading = true
 
 	textareas = {}
 	app = null

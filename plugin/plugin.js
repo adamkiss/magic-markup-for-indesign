@@ -7,88 +7,6 @@
     throw Error('Dynamic require of "' + x + '" is not supported');
   });
 
-  // src/textarea.js
-  var Textarea = class _Textarea {
-    static MIN_HEIGHT = 5;
-    static MATCHER_SINGLE = /^(.+):\s*(.+)$/;
-    static MATCHER_BEGIN_END = /^(.+):(.+):\s*(.+)$/;
-    paragraphStyles = true;
-    $ = null;
-    document = null;
-    rules = [];
-    constructor($element, paragraphStyles = true) {
-      this.$ = $element;
-      this.paragraphStyles = paragraphStyles;
-      this.$.addEventListener("input", this.input.bind(this));
-      this.$.addEventListener("keydown", this.keydown.bind(this));
-      this.load();
-      this.autosize();
-    }
-    parse() {
-      this.rules = this.paragraphStyles ? this.parseParagraphStyles() : this.parseCharacterStyles();
-    }
-    parseCharacterStyles() {
-      const rules = [];
-      for (const line of this.lines) {
-        if (!line.trim())
-          continue;
-        if (!line.includes(":"))
-          continue;
-        if (line.match(_Textarea.MATCHER_BEGIN_END)) {
-          const [begin, end, value] = line.match(_Textarea.MATCHER_BEGIN_END).slice(1);
-          rules.push({ find: `${begin}(.*?)${end}`, style: value.trim() });
-        } else if (line.match(_Textarea.MATCHER_SINGLE)) {
-          const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
-          rules.push({ find: `${key}(.*?)${key}`, style: value.trim() });
-        }
-      }
-      return rules;
-    }
-    parseParagraphStyles() {
-      const rules = [];
-      for (const line of this.lines) {
-        if (!line.match(_Textarea.MATCHER_SINGLE))
-          continue;
-        const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
-        rules.push({ find: `^${key}(.*?)$`, style: value.trim() });
-      }
-      return rules;
-    }
-    input() {
-      this.autosize();
-      this.parse();
-      this.save();
-    }
-    keydown(event) {
-      if (event.key === "v" && (event.ctrlKey || event.metaKey)) {
-        setTimeout(this.input.bind(this), 0);
-      }
-      if (event.key === "Tab" && !event.shiftKey) {
-        event.preventDefault();
-        const start = this.$.selectionStart;
-        const end = this.$.selectionEnd;
-        const value = this.$.value;
-        this.$.value = value.substring(0, start) + "	" + value.substring(end);
-      }
-    }
-    autosize() {
-      this.$.style.height = `calc(
-			(var(--textarea-font-size) * (var(--textarea-line-height)))
-				* ${Math.max(_Textarea.MIN_HEIGHT, this.lines.length)}
-		)`;
-    }
-    get lines() {
-      return (this.$.value || "").split("\n");
-    }
-    load() {
-      this.$.value = localStorage.getItem(this.$.id) || "";
-      this.parse();
-    }
-    save() {
-      localStorage.setItem(this.$.id, this.$.value);
-    }
-  };
-
   // src/utils.js
   function $(selector) {
     return document.querySelector(selector);
@@ -225,6 +143,351 @@
     }
   };
 
+  // src/storage.js
+  var lfs = __require("uxp").storage.localFileSystem;
+  var Storage = class _Storage {
+    static DEFAULT_PRESETS = {
+      "Default": {
+        paragraph: [],
+        character: [],
+        invisibles: []
+      }
+    };
+    static DEFAULT_ACTIVE_PRESET = "Default";
+    intialized = false;
+    onChange = () => {
+    };
+    presetsFile = null;
+    activePresetFile = null;
+    presets = null;
+    constructor({
+      presets,
+      onLoad = (_) => {
+      },
+      onChange = (_) => {
+      }
+    }) {
+      this.presets = presets;
+      this.onChange = onChange;
+      this.onChange(true);
+      this.init(onLoad);
+    }
+    async init(onLoadCallback) {
+      if (this.intialized)
+        return;
+      this.presetsFile = await lfs.createEntryWithUrl("plugin-data:/presets.json", { overwrite: true });
+      let presets;
+      try {
+        presets = await this.loadPresets();
+      } catch (e) {
+        await this.savePresets(_Storage.DEFAULT_PRESETS);
+        presets = await this.loadPresets();
+      }
+      this.activePresetFile = await lfs.createEntryWithUrl("plugin-data:/active-preset.json", { overwrite: true });
+      let activePreset;
+      try {
+        activePreset = await this.loadActivePreset();
+      } catch (e) {
+        await this.saveActivePreset(_Storage.DEFAULT_ACTIVE_PRESET);
+        activePreset = await this.loadActivePreset();
+      }
+      this.intialized = true;
+      this.onChange(false);
+      return onLoadCallback({ presets, activePreset });
+    }
+    _emitWorking() {
+      this.onChange(true);
+    }
+    _emitDone() {
+      this.onChange(false);
+    }
+    async loadPresets() {
+      this._emitWorking();
+      const data = await this.presetsFile.read();
+      const parsed = JSON.parse(data);
+      this._emitDone();
+      return parsed;
+    }
+    async savePresets(presets) {
+      this._emitWorking();
+      const written = await this.presetsFile.write(JSON.stringify(presets));
+      this._emitDone();
+      return written > 0;
+    }
+    async loadActivePreset() {
+      this._emitWorking();
+      const data = await this.activePresetFile.read();
+      const parsed = JSON.parse(data);
+      this._emitDone();
+      return parsed;
+    }
+    async saveActivePreset(activePreset) {
+      this._emitWorking();
+      const written = await this.activePresetFile.write(JSON.stringify(activePreset));
+      this._emitDone();
+      return written > 0;
+    }
+    async saveAll({ presets, activePreset }) {
+      await this.savePresets(presets);
+      await this.saveActivePreset(activePreset);
+    }
+  };
+
+  // src/presets.js
+  var { Application: Application2 } = __require("indesign");
+  var Presets = class extends EventTarget {
+    plugin = null;
+    storage = null;
+    presets = null;
+    activePresetName = null;
+    constructor(plugin) {
+      super();
+      this.plugin = plugin;
+      this.$storageActive = $("#storage-active");
+      this.onStorageLoaded = this.onStorageLoaded.bind(this);
+      this.onStorageChange = this.onStorageChange.bind(this);
+      this.storage = new Storage({
+        presets: this,
+        onLoad: this.onStorageLoaded,
+        onChange: this.onStorageChange
+      });
+      this.$picker = $("#presets");
+      this.$picker.addEventListener("change", this.onPickerChange.bind(this));
+    }
+    onStorageLoaded({ presets, activePreset }) {
+      this.presets = presets;
+      this.activePreset = activePreset;
+      this.updatePresetSelect();
+      this.$picker.disabled = false;
+      this.plugin.loaded = true;
+    }
+    onStorageChange(active = false) {
+      this.$storageActive.textContent = active ? " \u2026" : "";
+    }
+    onPickerChange(e) {
+      const value = e.target.value;
+      if (value === this.activePreset)
+        return;
+      switch (e.target.value) {
+        case "__command__delete":
+          this.plugin.confirmDialog.show({
+            title: "Delete preset?",
+            destructive: true,
+            onSuccess: () => {
+              this.deletePreset(this.activePreset);
+            }
+          });
+          this.updatePresetSelect();
+          break;
+        case "__command__rename":
+          this.plugin.promptDialog.show({
+            title: "Rename the preset to:",
+            input: this.activePreset,
+            onSuccess: (val) => {
+              this.renamePreset(this.activePreset, val);
+            }
+          });
+          this.updatePresetSelect();
+          break;
+        case "__command__duplicate":
+          this.plugin.promptDialog.show({
+            title: "Duplicate the preset as:",
+            input: this.activePreset + " copy",
+            onSuccess: (val) => {
+              this.duplicatePreset(this.activePreset, val);
+            }
+          });
+          this.updatePresetSelect();
+          break;
+        default:
+          this.activePreset = value;
+      }
+    }
+    get lastPreset() {
+      const keys = Object.keys(this.presets);
+      return keys[keys.length - 1];
+    }
+    get activePreset() {
+      return this.activePresetName;
+    }
+    set activePreset(name) {
+      this.activePresetName = name;
+      this.storage.activePreset = name;
+      this.updatePresetSelect();
+      this.storage.saveActivePreset(this.activePresetName);
+    }
+    deletePreset(name) {
+      if (name === "Default")
+        return;
+      delete this.presets[name];
+      this.activePreset = this.lastPreset;
+      this.saveToStorage();
+    }
+    renamePreset(name, newName) {
+      if (name === "Default")
+        return;
+      const preset = this.presets[name];
+      this.presets[newName] = preset;
+      delete this.presets[name];
+      this.activePreset = newName;
+      this.saveToStorage();
+    }
+    duplicatePreset(name, newName) {
+      const preset = this.presets[name];
+      this.presets[newName] = Object.assign({}, preset);
+      this.activePreset = newName;
+      this.saveToStorage();
+    }
+    saveToStorage() {
+      this.storage.saveAll({
+        presets: this.presets,
+        activePreset: this.activePreset
+      });
+    }
+    _mi_preset(name) {
+      return `
+			<sp-menu-item value="${name}"${this.activePreset === name ? ' selected="selected"' : ""}>${name}</sp-menu-item>
+		`;
+    }
+    _mi_divider() {
+      return `<sp-menu-divider></sp-menu-divider>`;
+    }
+    _mi_command({ command, text, disabled }) {
+      return `
+			<sp-menu-item value="__command__${command}"${disabled ? ' disabled="disabled"' : ""}>${text}</sp-menu-item>
+		`;
+    }
+    updatePresetSelect() {
+      const HTML = [
+        ...Object.keys(this.presets).map(this._mi_preset.bind(this)),
+        this._mi_divider(),
+        this._mi_command({
+          command: "rename",
+          text: "Rename preset",
+          disabled: this.activePreset === "Default"
+        }),
+        this._mi_command({
+          command: "duplicate",
+          text: "Duplicate preset"
+        }),
+        this._mi_command({
+          command: "delete",
+          text: "Delete preset",
+          disabled: this.activePreset === "Default"
+        })
+      ].join("");
+      this.$picker.querySelector("sp-menu").innerHTML = HTML;
+    }
+  };
+
+  // src/button-run.js
+  var { Application: Application3 } = __require("indesign");
+  var RunButton = class extends EventTarget {
+    $button = null;
+    constructor(plugin) {
+      super();
+      this.plugin = plugin;
+      this.$button = $("#button-run");
+      this.plugin.scope.addEventListener("change", this.onScopeChange.bind(this));
+      this.$button.addEventListener("click", this.dispatchClick.bind(this));
+      this.onScopeChange();
+    }
+    get disabled() {
+      return this.$button.disabled;
+    }
+    set disabled(value) {
+      this.$button.disabled = value;
+    }
+    onScopeChange() {
+      this.$button.disabled = !this.plugin.scope.isValid;
+    }
+    dispatchClick() {
+      this.dispatchEvent(new Event("click"));
+    }
+  };
+
+  // src/textarea.js
+  var Textarea = class _Textarea {
+    static MIN_HEIGHT = 5;
+    static MATCHER_SINGLE = /^(.+):\s*(.+)$/;
+    static MATCHER_BEGIN_END = /^(.+):(.+):\s*(.+)$/;
+    paragraphStyles = true;
+    $ = null;
+    document = null;
+    rules = [];
+    constructor($element, paragraphStyles = true) {
+      this.$ = $element;
+      this.paragraphStyles = paragraphStyles;
+      this.$.addEventListener("input", this.input.bind(this));
+      this.$.addEventListener("keydown", this.keydown.bind(this));
+      this.load();
+      this.autosize();
+    }
+    parse() {
+      this.rules = this.paragraphStyles ? this.parseParagraphStyles() : this.parseCharacterStyles();
+    }
+    parseCharacterStyles() {
+      const rules = [];
+      for (const line of this.lines) {
+        if (!line.trim())
+          continue;
+        if (!line.includes(":"))
+          continue;
+        if (line.match(_Textarea.MATCHER_BEGIN_END)) {
+          const [begin, end, value] = line.match(_Textarea.MATCHER_BEGIN_END).slice(1);
+          rules.push({ find: `${begin}(.*?)${end}`, style: value.trim() });
+        } else if (line.match(_Textarea.MATCHER_SINGLE)) {
+          const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
+          rules.push({ find: `${key}(.*?)${key}`, style: value.trim() });
+        }
+      }
+      return rules;
+    }
+    parseParagraphStyles() {
+      const rules = [];
+      for (const line of this.lines) {
+        if (!line.match(_Textarea.MATCHER_SINGLE))
+          continue;
+        const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
+        rules.push({ find: `^${key}(.*?)$`, style: value.trim() });
+      }
+      return rules;
+    }
+    input() {
+      this.autosize();
+      this.parse();
+      this.save();
+    }
+    keydown(event) {
+      if (event.key === "v" && (event.ctrlKey || event.metaKey)) {
+        setTimeout(this.input.bind(this), 0);
+      }
+      if (event.key === "Tab" && !event.shiftKey) {
+        event.preventDefault();
+        const start = this.$.selectionStart;
+        const end = this.$.selectionEnd;
+        const value = this.$.value;
+        this.$.value = value.substring(0, start) + "	" + value.substring(end);
+      }
+    }
+    autosize() {
+      this.$.style.height = `calc(
+			(var(--textarea-font-size) * (var(--textarea-line-height)))
+				* ${Math.max(_Textarea.MIN_HEIGHT, this.lines.length)}
+		)`;
+    }
+    get lines() {
+      return (this.$.value || "").split("\n");
+    }
+    load() {
+      this.$.value = localStorage.getItem(this.$.id) || "";
+      this.parse();
+    }
+    save() {
+      localStorage.setItem(this.$.id, this.$.value);
+    }
+  };
+
   // src/dialog-confirm.js
   var ConfirmDialog = class extends EventTarget {
     onSuccessFn = null;
@@ -265,154 +528,6 @@
       this.$buttonConfirm.removeEventListener("click", this.confirm);
       this.$buttonCancel.removeEventListener("click", this.close);
       this.$dialog.close();
-    }
-  };
-
-  // src/button-run.js
-  var { Application: Application2 } = __require("indesign");
-  var RunButton = class extends EventTarget {
-    $button = null;
-    constructor(plugin) {
-      super();
-      this.plugin = plugin;
-      this.$button = $("#button-run");
-      this.plugin.scope.addEventListener("change", this.onScopeChange.bind(this));
-      this.$button.addEventListener("click", this.dispatchClick.bind(this));
-      this.onScopeChange();
-    }
-    get disabled() {
-      return this.$button.disabled;
-    }
-    set disabled(value) {
-      this.$button.disabled = value;
-    }
-    onScopeChange() {
-      this.$button.disabled = !this.plugin.scope.isValid;
-    }
-    dispatchClick() {
-      this.dispatchEvent(new Event("click"));
-    }
-  };
-
-  // src/presets.js
-  var { Application: Application3 } = __require("indesign");
-  var Presets = class extends EventTarget {
-    plugin = null;
-    presets = {
-      "Default": {
-        paragraph: [],
-        character: [],
-        invisibles: []
-      }
-    };
-    activePreset = "Default";
-    constructor(plugin) {
-      super();
-      this.plugin = plugin;
-      this.$picker = $("#presets");
-      this.$picker.addEventListener("change", this.onPickerChange.bind(this));
-      this.updatePresetSelect();
-      this.$picker.disabled = false;
-    }
-    onPickerChange(e) {
-      const value = e.target.value;
-      if (value === this.activePreset)
-        return;
-      switch (e.target.value) {
-        case "__command__delete":
-          this.plugin.confirmDialog.show({
-            title: "Delete preset?",
-            destructive: true,
-            onSuccess: () => {
-              this.deletePreset(this.activePreset);
-            }
-          });
-          this.updatePresetSelect();
-          break;
-        case "__command__rename":
-          this.plugin.promptDialog.show({
-            title: "Rename the preset to:",
-            input: this.activePreset,
-            onSuccess: (val) => {
-              this.renamePreset(this.activePreset, val);
-            }
-          });
-          this.updatePresetSelect();
-          break;
-        case "__command__duplicate":
-          this.plugin.promptDialog.show({
-            title: "Duplicate the preset as:",
-            input: this.activePreset + " copy",
-            onSuccess: (val) => {
-              this.duplicatePreset(this.activePreset, val);
-            }
-          });
-          this.updatePresetSelect();
-          break;
-        default:
-          this.activatePreset(value);
-      }
-    }
-    get lastPreset() {
-      const keys = Object.keys(this.presets);
-      return keys[keys.length - 1];
-    }
-    deletePreset(name) {
-      if (name === "Default")
-        return;
-      delete this.presets[name];
-      this.activatePreset(this.lastPreset);
-    }
-    renamePreset(name, newName) {
-      if (name === "Default")
-        return;
-      const preset = this.presets[name];
-      this.presets[newName] = preset;
-      delete this.presets[name];
-      this.activatePreset(newName);
-    }
-    duplicatePreset(name, newName) {
-      const preset = this.presets[name];
-      this.presets[newName] = Object.assign({}, preset);
-      this.activatePreset(newName);
-    }
-    activatePreset(name) {
-      this.activePreset = name;
-      this.updatePresetSelect();
-    }
-    _mi_preset(name) {
-      return `
-			<sp-menu-item value="${name}"${this.activePreset === name ? ' selected="selected"' : ""}>${name}</sp-menu-item>
-		`;
-    }
-    _mi_divider() {
-      return `<sp-menu-divider></sp-menu-divider>`;
-    }
-    _mi_command({ command, text, disabled }) {
-      return `
-			<sp-menu-item value="__command__${command}"${disabled ? ' disabled="disabled"' : ""}>${text}</sp-menu-item>
-		`;
-    }
-    updatePresetSelect() {
-      const HTML = [
-        ...Object.keys(this.presets).map(this._mi_preset.bind(this)),
-        this._mi_divider(),
-        this._mi_command({
-          command: "rename",
-          text: "Rename preset",
-          disabled: this.activePreset === "Default"
-        }),
-        this._mi_command({
-          command: "duplicate",
-          text: "Duplicate preset"
-        }),
-        this._mi_command({
-          command: "delete",
-          text: "Delete preset",
-          disabled: this.activePreset === "Default"
-        })
-      ].join("");
-      this.$picker.querySelector("sp-menu").innerHTML = HTML;
     }
   };
 
@@ -473,6 +588,7 @@
   var PLUGIN_NAME = "\u{1FA84} Magic Markup";
   var MagicMarkupPlugin = class {
     PRODUCTION = false;
+    loading = true;
     textareas = {};
     app = null;
     listeners = [];

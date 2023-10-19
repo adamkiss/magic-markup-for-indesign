@@ -1,33 +1,48 @@
 const {Application} = require('indesign')
-import { $ } from "./utils";
 
+import Storage from "./storage";
+import { $ } from "./utils";
 
 /**
  * Manages presets, as well as preset configuration
  */
 export default class Presets extends EventTarget {
 	plugin = null
+	storage = null
 
-	presets = {
-		'Default': {
-			paragraph: [],
-			character: [],
-			invisibles: []
-		}
-	}
-	activePreset = 'Default'
+	presets = null
+	activePresetName = null
 
 	constructor(plugin) {
 		super()
 
 		this.plugin = plugin
+
+		this.$storageActive = $('#storage-active')
+		this.onStorageLoaded = this.onStorageLoaded.bind(this)
+		this.onStorageChange = this.onStorageChange.bind(this)
+		this.storage = new Storage({
+			presets: this,
+			onLoad: this.onStorageLoaded,
+			onChange: this.onStorageChange
+		})
+
 		this.$picker = $('#presets')
-
 		this.$picker.addEventListener('change', this.onPickerChange.bind(this))
+	}
 
-		// update preset list and enable
+	onStorageLoaded({presets, activePreset}) {
+		this.presets = presets
+		this.activePreset = activePreset
+
 		this.updatePresetSelect()
+
 		this.$picker.disabled = false
+		this.plugin.loaded = true
+	}
+
+	onStorageChange(active = false){
+		this.$storageActive.textContent = active ? ' …' : ''
 	}
 
 	onPickerChange(e) {
@@ -67,7 +82,7 @@ export default class Presets extends EventTarget {
 				this.updatePresetSelect() // reset the picker
 				break;
 			default:
-				this.activatePreset(value)
+				this.activePreset = value
 		}
 	}
 
@@ -76,12 +91,24 @@ export default class Presets extends EventTarget {
 		return keys[keys.length - 1]
 	}
 
+	get activePreset() {
+		return this.activePresetName
+	}
+	set activePreset(name) {
+		this.activePresetName = name
+		this.storage.activePreset = name
+		this.updatePresetSelect()
+
+		this.storage.saveActivePreset(this.activePresetName)
+	}
+
 	deletePreset(name) {
 		// Shouldn't happen, but…
 		if (name === 'Default') return
 
 		delete this.presets[name]
-		this.activatePreset(this.lastPreset)
+		this.activePreset = this.lastPreset
+		this.saveToStorage()
 	}
 
 	renamePreset(name, newName) {
@@ -92,18 +119,23 @@ export default class Presets extends EventTarget {
 		this.presets[newName] = preset
 		delete this.presets[name]
 
-		this.activatePreset(newName)
+		this.activePreset = newName
+		this.saveToStorage()
 	}
 
 	duplicatePreset(name, newName) {
 		const preset = this.presets[name]
 		this.presets[newName] = Object.assign({}, preset)
-		this.activatePreset(newName)
+
+		this.activePreset = newName
+		this.saveToStorage()
 	}
 
-	activatePreset(name) {
-		this.activePreset = name
-		this.updatePresetSelect()
+	saveToStorage() {
+		this.storage.saveAll({
+			presets: this.presets,
+			activePreset: this.activePreset
+		})
 	}
 
 	_mi_preset(name) {

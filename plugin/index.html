@@ -139,13 +139,13 @@
 <body>
 	<uxp-panel panelid="magicMarkup">
 		<div class="flex">
-			<sp-detail id="scope" data-grow>SCOPE<br>…</sp-detail>
+			<sp-detail id="scope" data-grow>LOADING</sp-detail>
 			<sp-action-button variant="primary" id="button-run" disabled>✨ Apply Magic</sp-action-button>
 		</div>
 
 		<sp-divider></sp-divider>
 
-		<sp-field-label for="presets"><sp-detail>ACTIVE PRESET</sp-detail></sp-field-label>
+		<sp-field-label for="presets"><sp-detail>ACTIVE PRESET <span id="storage-active"></span></sp-detail></sp-field-label>
         <sp-picker id="presets" size="m" label="Preset selection" disabled class="w-full">
 			<sp-menu slot="options"></sp-menu>
 		</sp-picker>
