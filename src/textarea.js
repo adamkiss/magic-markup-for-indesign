@@ -3,27 +3,31 @@ export default class Textarea {
 	static MATCHER_SINGLE = /^(.+):\s*(.+)$/
 	static MATCHER_BEGIN_END = /^(.+):(.+):\s*(.+)$/
 
-	paragraphStyles = true
 	$ = null
-	document = null
+	parseAsParagraphStyles = true
+	debounce = null
 
-	rules = []
-
-	constructor($element, paragraphStyles = true) {
+	constructor({
+		$element,
+		parseAsParagraphStyles = true,
+		onChange = () => {}
+	}) {
 		this.$ = $element
-		this.paragraphStyles = paragraphStyles
+		this.parseAsParagraphStyles = parseAsParagraphStyles
 
 		this.$.addEventListener('input', this.input.bind(this))
 		this.$.addEventListener('keydown', this.keydown.bind(this))
-
-		this.load()
-		this.autosize()
+		this.onChange = onChange
 	}
 
 	parse() {
-		this.rules = this.paragraphStyles
+		if (! this.$.value) return
+
+		const rules = this.parseAsParagraphStyles
 			? this.parseParagraphStyles()
 			: this.parseCharacterStyles()
+
+		this.onChange({rules, raw: this.value})
 	}
 
 	parseCharacterStyles() {
@@ -55,9 +59,11 @@ export default class Textarea {
 	}
 
 	input() {
-		this.autosize()
-		this.parse()
-		this.save()
+		clearTimeout(this.debounce)
+		this.debounce = setTimeout(_ => {
+			this.autosize()
+			this.parse()
+		}, 1000)
 	}
 
 	keydown(event) {
@@ -65,34 +71,25 @@ export default class Textarea {
 		if (event.key === 'v' && (event.ctrlKey || event.metaKey)) {
 			setTimeout(this.input.bind(this), 0)
 		}
-
-		// capture tab and add it to textarea
-		if (event.key === 'Tab' && !event.shiftKey) {
-			event.preventDefault()
-			const start = this.$.selectionStart
-			const end = this.$.selectionEnd
-			const value = this.$.value
-			this.$.value = value.substring(0, start) + '\t' + value.substring(end)
-		}
 	}
 
 	autosize() {
 		this.$.style.height = `calc(
 			(var(--textarea-font-size) * (var(--textarea-line-height)))
-				* ${Math.max(Textarea.MIN_HEIGHT, this.lines.length)}
+				* ${Math.max(Textarea.MIN_HEIGHT, this.lines.length) + 1}
 		)`;
 	}
 
 	get lines() {
-		return (this.$.value || '').split('\n')
+		return this.value.split('\n')
 	}
 
-	load() {
-		this.$.value = localStorage.getItem(this.$.id) || ''
-		this.parse()
+	get value() {
+		return this.$.value || ''
 	}
 
-	save() {
-		localStorage.setItem(this.$.id, this.$.value)
+	set value(value) {
+		this.$.value = value
+		this.autosize()
 	}
 }

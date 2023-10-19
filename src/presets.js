@@ -1,6 +1,7 @@
 const {Application} = require('indesign')
 
 import Storage from "./storage";
+import Textarea from "./textarea";
 import { $ } from "./utils";
 
 /**
@@ -12,6 +13,10 @@ export default class Presets extends EventTarget {
 
 	presets = null
 	activePresetName = null
+
+	$picker = null
+	$paraStyles = null
+	$charStyles = null
 
 	constructor(plugin) {
 		super()
@@ -29,6 +34,17 @@ export default class Presets extends EventTarget {
 
 		this.$picker = $('#presets')
 		this.$picker.addEventListener('change', this.onPickerChange.bind(this))
+
+		this.$paraStyles = new Textarea({
+			$element: $('#pstyles'),
+			parseAsParagraphStyles: true,
+			onChange: ({rules, raw}) => this.onPresetChanged('paragraph', {rules, raw})
+		})
+		this.$charStyles = new Textarea({
+			$element: $('#cstyles'),
+			parseAsParagraphStyles: false,
+			onChange: ({rules, raw}) => this.onPresetChanged('character', {rules, raw})
+		})
 	}
 
 	onStorageLoaded({presets, activePreset}) {
@@ -36,13 +52,14 @@ export default class Presets extends EventTarget {
 		this.activePreset = activePreset
 
 		this.updatePresetSelect()
+		this.updatePresetConfig()
 
 		this.$picker.disabled = false
 		this.plugin.loaded = true
 	}
 
 	onStorageChange(active = false){
-		this.$storageActive.textContent = active ? ' …' : ''
+		this.$storageActive.textContent = active ? '…' : ' '
 	}
 
 	onPickerChange(e) {
@@ -86,6 +103,16 @@ export default class Presets extends EventTarget {
 		}
 	}
 
+	onPresetChanged(type, {rules, raw}) {
+		this.activeConfiguration[type] = rules
+		this.activeConfiguration[`${type}Raw`] = raw
+		this.saveToStorage()
+	}
+
+	get activeConfiguration() {
+		return this.presets[this.activePreset]
+	}
+
 	get lastPreset() {
 		const keys = Object.keys(this.presets)
 		return keys[keys.length - 1]
@@ -94,10 +121,16 @@ export default class Presets extends EventTarget {
 	get activePreset() {
 		return this.activePresetName
 	}
+
 	set activePreset(name) {
+		if (! (name in this.presets)) {
+			this.activePreset = this.lastPreset
+		}
+
 		this.activePresetName = name
 		this.storage.activePreset = name
 		this.updatePresetSelect()
+		this.updatePresetConfig()
 
 		this.storage.saveActivePreset(this.activePresetName)
 	}
@@ -178,5 +211,10 @@ export default class Presets extends EventTarget {
 			})
 		].join('')
 		this.$picker.querySelector('sp-menu').innerHTML = HTML
+	}
+
+	updatePresetConfig() {
+		this.$paraStyles.value = this.activeConfiguration.paragraphRaw || ''
+		this.$charStyles.value = this.activeConfiguration.characterRaw || ''
 	}
 }

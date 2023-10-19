@@ -5,7 +5,6 @@ import Scope from "./scope";
 import Presets from "./presets";
 
 import RunButton from "./button-run";
-import Textarea from "./textarea";
 import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
 
@@ -27,12 +26,6 @@ class MagicMarkupPlugin {
 	runner = null
 	presets = null
 
-	rules = {
-		paragraph: [],
-		character: [],
-		invisibles: []
-	}
-
 	constructor(app) {
 		this.app = app
 		this.scope = new Scope(this)
@@ -43,9 +36,6 @@ class MagicMarkupPlugin {
 		this.promptDialog = new PromptDialog()
 
 		this.applyMagic = this.applyMagic.bind(this)
-
-		this.textareas.pstyles = new Textarea($('#pstyles'))
-		this.textareas.cstyles = new Textarea($('#cstyles'), false)
 
 		// Add event listeners
 		this.runButton.addEventListener('click', this.applyMagic)
@@ -65,10 +55,7 @@ class MagicMarkupPlugin {
 		})
 	}
 
-	destroy() {
-		console.log('destroying plugin')
-	}
-
+	destroy() {}
 	showPanel() {}
 
 	applyMagic({wholeDocument = false}) {

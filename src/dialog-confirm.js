@@ -34,7 +34,6 @@ export default class ConfirmDialog extends EventTarget {
 		// "negative" is current Spectrum name for "warning". Not yet supported
 		// this.$buttonConfirm.setAttribute('variant', destructive ? 'negative' : 'cta')
 		this.$buttonConfirm.setAttribute('variant', destructive ? 'warning' : 'cta')
-		console.log(destructive)
 
 		this.$buttonConfirm.addEventListener('click', this.confirm)
 		this.$buttonCancel.addEventListener('click', this.close)

@@ -4,7 +4,9 @@ export default class Storage {
 	static DEFAULT_PRESETS = {
 		'Default': {
 			paragraph: [],
+			paragraphRaw: '',
 			character: [],
+			characterRaw: '',
 			invisibles: []
 		}
 	}

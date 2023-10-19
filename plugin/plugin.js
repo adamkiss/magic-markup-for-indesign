@@ -149,7 +149,9 @@
     static DEFAULT_PRESETS = {
       "Default": {
         paragraph: [],
+        paragraphRaw: "",
         character: [],
+        characterRaw: "",
         invisibles: []
       }
     };
@@ -233,6 +235,89 @@
     }
   };
 
+  // src/textarea.js
+  var Textarea = class _Textarea {
+    static MIN_HEIGHT = 5;
+    static MATCHER_SINGLE = /^(.+):\s*(.+)$/;
+    static MATCHER_BEGIN_END = /^(.+):(.+):\s*(.+)$/;
+    $ = null;
+    parseAsParagraphStyles = true;
+    debounce = null;
+    constructor({
+      $element,
+      parseAsParagraphStyles = true,
+      onChange = () => {
+      }
+    }) {
+      this.$ = $element;
+      this.parseAsParagraphStyles = parseAsParagraphStyles;
+      this.$.addEventListener("input", this.input.bind(this));
+      this.$.addEventListener("keydown", this.keydown.bind(this));
+      this.onChange = onChange;
+    }
+    parse() {
+      if (!this.$.value)
+        return;
+      const rules = this.parseAsParagraphStyles ? this.parseParagraphStyles() : this.parseCharacterStyles();
+      this.onChange({ rules, raw: this.value });
+    }
+    parseCharacterStyles() {
+      const rules = [];
+      for (const line of this.lines) {
+        if (!line.trim())
+          continue;
+        if (!line.includes(":"))
+          continue;
+        if (line.match(_Textarea.MATCHER_BEGIN_END)) {
+          const [begin, end, value] = line.match(_Textarea.MATCHER_BEGIN_END).slice(1);
+          rules.push({ find: `${begin}(.*?)${end}`, style: value.trim() });
+        } else if (line.match(_Textarea.MATCHER_SINGLE)) {
+          const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
+          rules.push({ find: `${key}(.*?)${key}`, style: value.trim() });
+        }
+      }
+      return rules;
+    }
+    parseParagraphStyles() {
+      const rules = [];
+      for (const line of this.lines) {
+        if (!line.match(_Textarea.MATCHER_SINGLE))
+          continue;
+        const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
+        rules.push({ find: `^${key}(.*?)$`, style: value.trim() });
+      }
+      return rules;
+    }
+    input() {
+      clearTimeout(this.debounce);
+      this.debounce = setTimeout((_) => {
+        this.autosize();
+        this.parse();
+      }, 1e3);
+    }
+    keydown(event) {
+      if (event.key === "v" && (event.ctrlKey || event.metaKey)) {
+        setTimeout(this.input.bind(this), 0);
+      }
+    }
+    autosize() {
+      this.$.style.height = `calc(
+			(var(--textarea-font-size) * (var(--textarea-line-height)))
+				* ${Math.max(_Textarea.MIN_HEIGHT, this.lines.length) + 1}
+		)`;
+    }
+    get lines() {
+      return this.value.split("\n");
+    }
+    get value() {
+      return this.$.value || "";
+    }
+    set value(value) {
+      this.$.value = value;
+      this.autosize();
+    }
+  };
+
   // src/presets.js
   var { Application: Application2 } = __require("indesign");
   var Presets = class extends EventTarget {
@@ -240,6 +325,9 @@
     storage = null;
     presets = null;
     activePresetName = null;
+    $picker = null;
+    $paraStyles = null;
+    $charStyles = null;
     constructor(plugin) {
       super();
       this.plugin = plugin;
@@ -253,16 +341,27 @@
       });
       this.$picker = $("#presets");
       this.$picker.addEventListener("change", this.onPickerChange.bind(this));
+      this.$paraStyles = new Textarea({
+        $element: $("#pstyles"),
+        parseAsParagraphStyles: true,
+        onChange: ({ rules, raw }) => this.onPresetChanged("paragraph", { rules, raw })
+      });
+      this.$charStyles = new Textarea({
+        $element: $("#cstyles"),
+        parseAsParagraphStyles: false,
+        onChange: ({ rules, raw }) => this.onPresetChanged("character", { rules, raw })
+      });
     }
     onStorageLoaded({ presets, activePreset }) {
       this.presets = presets;
       this.activePreset = activePreset;
       this.updatePresetSelect();
+      this.updatePresetConfig();
       this.$picker.disabled = false;
       this.plugin.loaded = true;
     }
     onStorageChange(active = false) {
-      this.$storageActive.textContent = active ? " \u2026" : "";
+      this.$storageActive.textContent = active ? "\u2026" : " ";
     }
     onPickerChange(e) {
       const value = e.target.value;
@@ -303,6 +402,14 @@
           this.activePreset = value;
       }
     }
+    onPresetChanged(type, { rules, raw }) {
+      this.activeConfiguration[type] = rules;
+      this.activeConfiguration[`${type}Raw`] = raw;
+      this.saveToStorage();
+    }
+    get activeConfiguration() {
+      return this.presets[this.activePreset];
+    }
     get lastPreset() {
       const keys = Object.keys(this.presets);
       return keys[keys.length - 1];
@@ -311,9 +418,13 @@
       return this.activePresetName;
     }
     set activePreset(name) {
+      if (!(name in this.presets)) {
+        this.activePreset = this.lastPreset;
+      }
       this.activePresetName = name;
       this.storage.activePreset = name;
       this.updatePresetSelect();
+      this.updatePresetConfig();
       this.storage.saveActivePreset(this.activePresetName);
     }
     deletePreset(name) {
@@ -378,6 +489,10 @@
       ].join("");
       this.$picker.querySelector("sp-menu").innerHTML = HTML;
     }
+    updatePresetConfig() {
+      this.$paraStyles.value = this.activeConfiguration.paragraphRaw || "";
+      this.$charStyles.value = this.activeConfiguration.characterRaw || "";
+    }
   };
 
   // src/button-run.js
@@ -406,88 +521,6 @@
     }
   };
 
-  // src/textarea.js
-  var Textarea = class _Textarea {
-    static MIN_HEIGHT = 5;
-    static MATCHER_SINGLE = /^(.+):\s*(.+)$/;
-    static MATCHER_BEGIN_END = /^(.+):(.+):\s*(.+)$/;
-    paragraphStyles = true;
-    $ = null;
-    document = null;
-    rules = [];
-    constructor($element, paragraphStyles = true) {
-      this.$ = $element;
-      this.paragraphStyles = paragraphStyles;
-      this.$.addEventListener("input", this.input.bind(this));
-      this.$.addEventListener("keydown", this.keydown.bind(this));
-      this.load();
-      this.autosize();
-    }
-    parse() {
-      this.rules = this.paragraphStyles ? this.parseParagraphStyles() : this.parseCharacterStyles();
-    }
-    parseCharacterStyles() {
-      const rules = [];
-      for (const line of this.lines) {
-        if (!line.trim())
-          continue;
-        if (!line.includes(":"))
-          continue;
-        if (line.match(_Textarea.MATCHER_BEGIN_END)) {
-          const [begin, end, value] = line.match(_Textarea.MATCHER_BEGIN_END).slice(1);
-          rules.push({ find: `${begin}(.*?)${end}`, style: value.trim() });
-        } else if (line.match(_Textarea.MATCHER_SINGLE)) {
-          const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
-          rules.push({ find: `${key}(.*?)${key}`, style: value.trim() });
-        }
-      }
-      return rules;
-    }
-    parseParagraphStyles() {
-      const rules = [];
-      for (const line of this.lines) {
-        if (!line.match(_Textarea.MATCHER_SINGLE))
-          continue;
-        const [key, value] = line.match(_Textarea.MATCHER_SINGLE).slice(1);
-        rules.push({ find: `^${key}(.*?)$`, style: value.trim() });
-      }
-      return rules;
-    }
-    input() {
-      this.autosize();
-      this.parse();
-      this.save();
-    }
-    keydown(event) {
-      if (event.key === "v" && (event.ctrlKey || event.metaKey)) {
-        setTimeout(this.input.bind(this), 0);
-      }
-      if (event.key === "Tab" && !event.shiftKey) {
-        event.preventDefault();
-        const start = this.$.selectionStart;
-        const end = this.$.selectionEnd;
-        const value = this.$.value;
-        this.$.value = value.substring(0, start) + "	" + value.substring(end);
-      }
-    }
-    autosize() {
-      this.$.style.height = `calc(
-			(var(--textarea-font-size) * (var(--textarea-line-height)))
-				* ${Math.max(_Textarea.MIN_HEIGHT, this.lines.length)}
-		)`;
-    }
-    get lines() {
-      return (this.$.value || "").split("\n");
-    }
-    load() {
-      this.$.value = localStorage.getItem(this.$.id) || "";
-      this.parse();
-    }
-    save() {
-      localStorage.setItem(this.$.id, this.$.value);
-    }
-  };
-
   // src/dialog-confirm.js
   var ConfirmDialog = class extends EventTarget {
     onSuccessFn = null;
@@ -513,7 +546,6 @@
       this.$title.innerHTML = title;
       this.$body.innerHTML = `<sp-body>${body}</sp-body>`;
       this.$buttonConfirm.setAttribute("variant", destructive ? "warning" : "cta");
-      console.log(destructive);
       this.$buttonConfirm.addEventListener("click", this.confirm);
       this.$buttonCancel.addEventListener("click", this.close);
       this.$dialog.showModal();
@@ -597,11 +629,6 @@
     scope = null;
     runner = null;
     presets = null;
-    rules = {
-      paragraph: [],
-      character: [],
-      invisibles: []
-    };
     constructor(app2) {
       this.app = app2;
       this.scope = new Scope(this);
@@ -610,8 +637,6 @@
       this.confirmDialog = new ConfirmDialog();
       this.promptDialog = new PromptDialog();
       this.applyMagic = this.applyMagic.bind(this);
-      this.textareas.pstyles = new Textarea($("#pstyles"));
-      this.textareas.cstyles = new Textarea($("#cstyles"), false);
       this.runButton.addEventListener("click", this.applyMagic);
       createMenuItem({
         app: app2,
@@ -625,7 +650,6 @@
       });
     }
     destroy() {
-      console.log("destroying plugin");
     }
     showPanel() {
     }

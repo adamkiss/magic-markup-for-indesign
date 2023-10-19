@@ -44,6 +44,10 @@
 			width: 100%;
 		}
 
+		.relative {
+			position: relative;
+		}
+
 		sp-detail {
 			text-transform: uppercase;
 		}
@@ -79,6 +83,12 @@
 
 		#scope {
 			padding-top: var(--padding);
+		}
+		#storage-active {
+			display: block;
+			position: absolute;
+			top: 0;
+			right: 0;
 		}
 
 		@media (prefers-color-scheme: darkest) {
@@ -145,7 +155,10 @@
 
 		<sp-divider></sp-divider>
 
-		<sp-field-label for="presets"><sp-detail>ACTIVE PRESET <span id="storage-active"></span></sp-detail></sp-field-label>
+		<sp-field-label for="presets" class="relative">
+			<sp-detail>ACTIVE PRESET</sp-detail>
+			<span id="storage-active"></span>
+		</sp-field-label>
         <sp-picker id="presets" size="m" label="Preset selection" disabled class="w-full">
 			<sp-menu slot="options"></sp-menu>
 		</sp-picker>
