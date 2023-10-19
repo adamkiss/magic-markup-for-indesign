@@ -585,7 +585,9 @@
 
   // src/plugin.js
   var { app, ScriptLanguage, UndoModes } = __require("indesign");
+  var { shell } = __require("uxp");
   var PLUGIN_NAME = "\u{1FA84} Magic Markup";
+  var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
     PRODUCTION = false;
     loading = true;
@@ -616,6 +618,10 @@
         pluginName: PLUGIN_NAME,
         menuItemName: "\u2728 Apply Magic Markup",
         invokeCallback: this.applyMagic.bind(this)
+      });
+      $("#info .name").textContent = `${PLUGIN_NAME} v${PLUGIN_VERSION}`;
+      $("#info .help").addEventListener("click", async (_) => {
+        await shell.openExternal("https://github.com/adamkiss/magic-markup-for-indesign#readme");
       });
     }
     destroy() {

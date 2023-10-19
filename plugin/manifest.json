@@ -11,7 +11,13 @@
     ],
     "manifestVersion": 5,
 	"requiredPermissions": {
-        "localFileSystem": "plugin"
+        "localFileSystem": "plugin",
+        "network": {
+            "domains": ["https://github.com", "https://adamkiss.com"]
+        },
+		"launchProcess": {
+			"schemes": ["https"]
+		}
     },
     "entrypoints": [
         {
