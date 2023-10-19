@@ -1,6 +1,11 @@
-import { $, $$ } from './utils.js'
+import { $, $$, esc } from './utils.js'
 
-export default class Invisibles extends EventTarget {
+/**
+ * Responsible for UI and logic of the invisibles feature
+ *
+ * Unlike textareas, which return semi-parsed rules, this class returns final GREP rules
+ */
+export default class Invisibles {
 	static CODES =
 	{
 		'Discretionary Hyphen': {char: '~-', code: 'dh'},
@@ -20,8 +25,6 @@ export default class Invisibles extends EventTarget {
 	onChangeFn = null
 
 	constructor({onChange}) {
-		super()
-
 		this.$labels = $$('sp-field-label[for^="invisibles-"] > sp-detail');
 		this.$toggle = $('#invisibles-switch')
 		this.$inputOpen = $('#invisibles-open')
@@ -51,11 +54,31 @@ export default class Invisibles extends EventTarget {
 		this.onChangeFn({invisibles: this.value})
 	}
 
+	get	open() { return this.$inputOpen.value }
+	get	close() { return this.$inputClose.value }
+
+	get rules() {
+		if (this.toggled !== true || !(this.open || this.close)) return []
+
+		const op = esc(this.open || '')
+		const cl = esc(this.close || '')
+
+		return Object.keys(Invisibles.CODES).map(key => {
+			const {char, code} = Invisibles.CODES[key]
+			return [
+				{findWhat: `${op}(?:${esc(char)}|${code})${cl}`},
+				{changeTo: char}
+			]
+		})
+	}
+
+
 	get value() {
 		return {
 			toggled: this.toggled,
-			open: this.$inputOpen.value,
-			close: this.$inputClose.value
+			open: this.open,
+			close: this.close,
+			rules: this.rules
 		}
 	}
 

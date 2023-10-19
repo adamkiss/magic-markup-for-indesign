@@ -92,18 +92,8 @@ class MagicMarkupPlugin {
 				{changeTo: '$1', appliedCharacterStyle: rule.style},
 			]);
 		}
-		if (config.invisibles?.toggled === true && config.invisibles?.open && config.invisibles?.close) {
-			const cio = config.invisibles.open
-			const cic = config.invisibles.close
-
-			for (const key in Invisibles.CODES) {
-				const {char, code} = Invisibles.CODES[key]
-				console.log(`${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}`)
-				greps.push([
-					{findWhat: `${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}`},
-					{changeTo: char}
-				])
-			}
+		if (config.invisibles?.rules?.length) {
+			greps.push(...config.invisibles.rules);
 		}
 
 		this.app.doScript(() => {

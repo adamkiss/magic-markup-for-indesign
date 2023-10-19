@@ -8,10 +8,15 @@ this line should have: .dot.Red.dot. dot Black dot ~wave~Red~wave~ Black \backsl
 
 $$$ Also header
 
+Paragraph
+
+\\\ Another weird header
+
 Rules:
 
 ^^^ : Header 1
 $$$ : Header 1
+\\\ : Header 1
 ~~~ : Subtitle
 
 .dot.: Red

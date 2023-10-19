@@ -346,7 +346,7 @@
   };
 
   // src/invisibles.js
-  var Invisibles = class extends EventTarget {
+  var Invisibles = class _Invisibles {
     static CODES = {
       "Discretionary Hyphen": { char: "~-", code: "dh" },
       "Nonbreaking Hyphen": { char: "~~", code: "nbh" },
@@ -363,7 +363,6 @@
     toggled = false;
     onChangeFn = null;
     constructor({ onChange }) {
-      super();
       this.$labels = $$('sp-field-label[for^="invisibles-"] > sp-detail');
       this.$toggle = $("#invisibles-switch");
       this.$inputOpen = $("#invisibles-open");
@@ -385,11 +384,31 @@
     onCharacterChanged() {
       this.onChangeFn({ invisibles: this.value });
     }
+    get open() {
+      return this.$inputOpen.value;
+    }
+    get close() {
+      return this.$inputClose.value;
+    }
+    get rules() {
+      if (this.toggled !== true || !(this.open || this.close))
+        return [];
+      const op = esc(this.open || "");
+      const cl = esc(this.close || "");
+      return Object.keys(_Invisibles.CODES).map((key) => {
+        const { char, code } = _Invisibles.CODES[key];
+        return [
+          { findWhat: `${op}(?:${esc(char)}|${code})${cl}` },
+          { changeTo: char }
+        ];
+      });
+    }
     get value() {
       return {
         toggled: this.toggled,
-        open: this.$inputOpen.value,
-        close: this.$inputClose.value
+        open: this.open,
+        close: this.close,
+        rules: this.rules
       };
     }
     set value({ toggled, open, close }) {
@@ -779,17 +798,8 @@
           { changeTo: "$1", appliedCharacterStyle: rule.style }
         ]);
       }
-      if (config.invisibles?.toggled === true && config.invisibles?.open && config.invisibles?.close) {
-        const cio = config.invisibles.open;
-        const cic = config.invisibles.close;
-        for (const key in Invisibles.CODES) {
-          const { char, code } = Invisibles.CODES[key];
-          console.log(`${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}`);
-          greps.push([
-            { findWhat: `${esc(cio)}(?:${esc(char)}|${code})${esc(cic)}` },
-            { changeTo: char }
-          ]);
-        }
+      if (config.invisibles?.rules?.length) {
+        greps.push(...config.invisibles.rules);
       }
       this.app.doScript(() => {
         for (const [findPrefs, changePrefs] of greps) {
