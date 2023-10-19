@@ -72,18 +72,19 @@ class MagicMarkupPlugin {
 		}
 
 		this.runButton.disabled = true
+		const config = this.presets.activeConfiguration
 
-		ensureParagraphStyles(this.app.activeDocument, this.textareas.pstyles.rules.map(rule => rule.style))
-		ensureCharacterStyles(this.app.activeDocument, this.textareas.cstyles.rules.map(rule => rule.style))
+		ensureParagraphStyles(this.app.activeDocument, config.paragraph.map(rule => rule.style))
+		ensureCharacterStyles(this.app.activeDocument, config.character.map(rule => rule.style))
 
 		const greps = []
-		for (const rule of this.textareas.pstyles.rules) {
+		for (const rule of config.paragraph) {
 			greps.push([
 				{findWhat: rule.find},
 				{changeTo: '$1', appliedParagraphStyle: rule.style},
 			]);
 		}
-		for (const rule of this.textareas.cstyles.rules) {
+		for (const rule of config.character) {
 			greps.push([
 				{findWhat: rule.find},
 				{changeTo: '$1', appliedCharacterStyle: rule.style},
