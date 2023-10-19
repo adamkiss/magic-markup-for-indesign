@@ -21,8 +21,6 @@ export default class Textarea {
 	}
 
 	parse() {
-		if (! this.$.value) return
-
 		const rules = this.parseAsParagraphStyles
 			? this.parseParagraphStyles()
 			: this.parseCharacterStyles()
