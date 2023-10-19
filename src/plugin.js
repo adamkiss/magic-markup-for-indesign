@@ -1,5 +1,4 @@
-import {$, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences} from "./utils";
-import createMenuItem from "./menu-item";
+import {$, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences, createMenuItem, cleanUpMenuItems} from "./utils";
 
 import Scope from "./scope";
 import Presets from "./presets";
@@ -41,6 +40,7 @@ class MagicMarkupPlugin {
 		this.runButton.addEventListener('click', this.applyMagic)
 
 		// Add a menu item (?) to be targeted by a script 🙄
+		cleanUpMenuItems({app, currentPluginName: PLUGIN_NAME})
 		createMenuItem({
 			app,
 			pluginName: PLUGIN_NAME,

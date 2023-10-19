@@ -34,8 +34,6 @@
     app2.findGrepPreferences = null;
     app2.changeGrepPreferences = null;
   }
-
-  // src/menu-item.js
   function createMenuItem({
     app: app2,
     pluginName,
@@ -45,9 +43,6 @@
     try {
       const pluginMenu = app2.menus.item("Main").submenus.item("Plug-Ins").submenus.item(pluginName);
       const existingMenuItem = pluginMenu.menuItems.itemByName(menuItemName);
-      if (existingMenuItem.isValid) {
-        existingMenuItem.remove();
-      }
       if (!existingMenuItem.isValid) {
         const menuItem = app2.scriptMenuActions.add(menuItemName);
         menuItem.addEventListener("onInvoke", invokeCallback);
@@ -56,6 +51,34 @@
       return true;
     } catch (error) {
       console.error(error);
+      return false;
+    }
+  }
+  function removeOldMenuItemsInSubmenu(menu) {
+    for (let index = 0; index < menu.menuItems.length; index++) {
+      const menuItem = menu.menuItems.item(index);
+      if (!(menuItem.isValid && menuItem.name.includes("Apply Magic Markup")))
+        continue;
+      menuItem.remove();
+    }
+  }
+  function cleanUpMenuItems({ app: app2, currentPluginName }) {
+    try {
+      const pluginMenu = app2.menus.item("Main").submenus.item("Plug-Ins");
+      removeOldMenuItemsInSubmenu(pluginMenu);
+      for (let index = 0; index < pluginMenu.submenus.length; index++) {
+        const submenu = pluginMenu.submenus.item(index);
+        if (!submenu.isValid || !submenu.name.includes("Magic Markup"))
+          continue;
+        if (submenu.name !== currentPluginName && submenu.isValid) {
+          submenu.remove();
+        } else if (submenu.isValid) {
+          removeOldMenuItemsInSubmenu(submenu);
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error("CLEANUP", error);
       return false;
     }
   }
@@ -672,7 +695,7 @@
   // src/plugin.js
   var { app, ScriptLanguage, UndoModes } = __require("indesign");
   var { shell } = __require("uxp");
-  var PLUGIN_NAME = "\u{1FA84} Magic Markup";
+  var PLUGIN_NAME = "\u{1F308} Magic Markup";
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
     PRODUCTION = false;
@@ -692,6 +715,7 @@
       this.promptDialog = new PromptDialog();
       this.applyMagic = this.applyMagic.bind(this);
       this.runButton.addEventListener("click", this.applyMagic);
+      cleanUpMenuItems({ app: app2, currentPluginName: PLUGIN_NAME });
       createMenuItem({
         app: app2,
         pluginName: PLUGIN_NAME,
