@@ -19,7 +19,7 @@ Define your markup in a simple a DSL and apply it to a text, in one click of a b
 - Everything until `:` is part of the pattern, including spaces
 - Last `:` on line counts as separator, so `::::: Weird` would match any line beginning with `::::`
 - Paragraph style name is trimmed (unlike pattern), so it will be set to `Header`, not ` Header`
-- **!** `raw` as a pattern isn't supported; see [Patterns: raw GREP][#patterns--raw-grep]
+- **!** `raw` as a pattern isn't supported; see [Patterns: raw GREP](#patterns-raw-grep)
 
 ### Character styles
 
@@ -33,7 +33,7 @@ __: Underlined
 - Everything until `:` is part of the pattern, including spaces
 - Character style name is trimmed when applied
 - Is matched after Assymetrical character styles
-- **!** `raw` as a pattern isn't supported; see [Patterns: raw GREP][#patterns--raw-grep]
+- **!** `raw` as a pattern isn't supported; see [Patterns: raw GREP](#patterns-raw-grep)
 
 #### Asymmetrical
 
@@ -47,7 +47,7 @@ _-:-_: Snake
 	- `:::: Woot` would parse as `[':', split, ':', split, 'Woot']`
 	- `::::: Dumb Style` would parse as `['::', split, ':', split, 'Woot']`
 	- `::: Double Colon` would not be matched (doesn't match `.+:.+:` pattern, that requires at least four characters)
-- **!** `raw` as the opening pattern isn't supported; see [Patterns: raw GREP][#patterns--raw-grep]
+- **!** `raw` as the opening pattern isn't supported; see [Patterns: raw GREP](#patterns-raw-grep)
 
 ### Patterns: raw GREP
 
