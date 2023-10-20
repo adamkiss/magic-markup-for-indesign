@@ -49,3 +49,7 @@ _-:-_: Snake
 ### Invisibles
 
 TBD. Will replace patterns inside configurable characters like `[\n]` into their invisble characters (`\n` is Forced Line Break, new line without ending Paragraph). will come in v0.6.0
+
+## Known Issues
+
+- _Very_ occasionally, scope fails to update; It usually happens when clicking _really, really fast_ between a story/textframe and a document. It's a timing issue between InDesign and the plugin and there's nothing to be done.
