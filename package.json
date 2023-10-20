@@ -1,6 +1,5 @@
 {
   "name": "com.adamkiss.magic-markup",
-  "version": "0.5.1",
   "description": "Magically convert markup to styles",
   "main": "index.js",
   "scripts": {
