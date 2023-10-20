@@ -834,7 +834,7 @@
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
     constructor(app2) {
-      __publicField(this, "PRODUCTION", false);
+      __publicField(this, "PRODUCTION", true);
       __publicField(this, "loaded", false);
       __publicField(this, "textareas", {});
       __publicField(this, "app", null);
