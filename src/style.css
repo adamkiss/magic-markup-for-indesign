@@ -38,6 +38,24 @@ label {
 .flex > [data-grow] {
 	flex-grow: 1;
 }
+.flex-thirds > * {
+	width: 30%;
+}
+.flex-thirds > .double {
+	width: 65%;
+}
+.flex-wrap {
+	flex-wrap: wrap;
+}
+.flex-align-start {
+	align-items: flex-start;
+}
+.flex-gap > * + * {
+	margin-left: var(--padding);
+}
+.lh-2 {
+	line-height: 2 !important;
+}
 
 .w-full {
 	width: 100%;
@@ -47,7 +65,10 @@ label {
 	position: relative;
 }
 .font-normal {
-	font-weight: normal;
+	font-weight: normal !important;
+}
+.font-monospace {
+	font-family: 'SF Mono Regular', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace;
 }
 
 /*******************************************************************************************
@@ -80,7 +101,16 @@ textarea {
 
 input[type="text"] {
 	margin: 0;
-	padd: 2px;
+	padding: 2px;
+}
+
+code {
+	font-family: 'SF Mono Regular', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+	padding: 2px;
+	background: #0002;
+}
+code[data-s] {
+	font-size: 0.9em;
 }
 
 #scope {
@@ -97,14 +127,20 @@ input[type="text"] {
 	DIALOGS
 ********************************************************************************************/
 
-dialog input[type="text"] {
+#prompt input[type="text"] {
 	margin-top: var(--padding);
 	width: 100%;
 	padding: 20px;
 }
 
 dialog[id^="cheatsheet-"] {
-
+	max-width: 1200px;
+	max-height: 800px;
+	padding: 0 !important;
+}
+dialog[id^="cheatsheet-"] > form {
+	overflow-y: scroll;
+	padding: 34px;
 }
 dialog[id^="cheatsheet-"] header > sp-heading { margin-top: 0; }
 dialog[id^="cheatsheet-"] header > button { margin-top: 0; margin-left: 4px; margin-right: -4px; margin-bottom: -2px; }

@@ -15,6 +15,7 @@ export default class Storage {
 	intialized = false
 	onChange = () => {}
 
+	pluginDataFolder = null
 	presetsFile = null
 	activePresetFile = null
 
@@ -34,6 +35,8 @@ export default class Storage {
 
 	async init(onLoadCallback) {
 		if (this.intialized) return
+
+		this.pluginDataFolder = (await lfs.getDataFolder()).nativePath
 
 		this.presetsFile = await lfs.createEntryWithUrl('plugin-data:/presets.json', {overwrite: true})
 		let presets

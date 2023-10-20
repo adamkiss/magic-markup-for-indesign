@@ -190,6 +190,7 @@
     intialized = false;
     onChange = () => {
     };
+    pluginDataFolder = null;
     presetsFile = null;
     activePresetFile = null;
     presets = null;
@@ -208,6 +209,7 @@
     async init(onLoadCallback) {
       if (this.intialized)
         return;
+      this.pluginDataFolder = (await lfs.getDataFolder()).nativePath;
       this.presetsFile = await lfs.createEntryWithUrl("plugin-data:/presets.json", { overwrite: true });
       let presets;
       try {
@@ -360,17 +362,61 @@
   // src/markers.js
   var Markers = class _Markers {
     static CODES = {
-      "Discretionary Hyphen": { char: "~-", code: "dh" },
-      "Nonbreaking Hyphen": { char: "~~", code: "nbh" },
-      "Flush Space": { char: "~f", code: "fs" },
-      "Hair Space": { char: "~|", code: "hs" },
-      "Forced Line Break": { char: "\\n", code: "flb" },
-      "Column Break": { char: "~M", code: "cb" },
-      "Frame Break": { char: "~R", code: "fb" },
-      "Page Break": { char: "~P", code: "pb" },
-      "Tab": { char: "\\t", code: "tab" },
-      "Right Indent Tab": { char: "~y", code: "rit" },
-      "Indent to Here": { char: "~i", code: "ith" }
+      "Discretionary Hyphen": {
+        char: "~-",
+        code: "dh",
+        description: "Invisible hyphen that only appears at the end of a line when the word breaks. Placed at the start of a word, it prevents the word from breaking."
+      },
+      "Nonbreaking Hyphen": {
+        char: "~~",
+        code: "nbh",
+        description: "Visible hyphen that prevents the word from breaking."
+      },
+      "Flush Space": {
+        char: "~f",
+        code: "fs",
+        description: "Grows to equal space for each flush space in paragraphs that are Fully Justified."
+      },
+      "Hair Space": {
+        char: "~|",
+        code: "hs",
+        description: "Hair space"
+      },
+      "Forced Line Break": {
+        char: "\\n",
+        code: "flb",
+        description: "Forces a line break without breaking paragraph."
+      },
+      "Column Break": {
+        char: "~M",
+        code: "cb",
+        description: "Forces following text to begin in the next column."
+      },
+      "Frame Break": {
+        char: "~R",
+        code: "fb",
+        description: "Forces following text to begin in the next text frame."
+      },
+      "Page Break": {
+        char: "~P",
+        code: "pb",
+        description: "Forces following text to begin on the next page."
+      },
+      "Tab": {
+        char: "\\t",
+        code: "tab",
+        description: "Tab character"
+      },
+      "Right Indent Tab": {
+        char: "~y",
+        code: "rit",
+        description: "Forces text beyond this marker to align to the right margin."
+      },
+      "Indent to Here": {
+        char: "~i",
+        code: "ith",
+        description: "Forces every following line in a paragraph to indent to the position of this marker."
+      }
     };
     toggled = false;
     onChangeFn = null;
@@ -770,17 +816,36 @@
         menuItemName: "\u2728 Apply Magic Markup",
         invokeCallback: this.applyMagic.bind(this)
       });
-      $("#info .version").textContent = `\u{1F308} v${PLUGIN_VERSION}`;
-      $("#info .help").addEventListener("click", async (_) => {
-        await shell.openExternal("https://github.com/adamkiss/magic-markup-for-indesign#readme");
-      });
-      $("#info .cheatsheet").addEventListener("click", (_) => {
-        $("#cheatsheet-002").showModal();
-      });
+      this.setupInfo();
     }
     destroy() {
     }
     showPanel() {
+    }
+    setupInfo() {
+      $("#info .version").textContent = `\u{1F308} v${PLUGIN_VERSION}`;
+      $("#info .help").addEventListener("click", async (_) => {
+        await shell.openExternal("https://github.com/adamkiss/magic-markup-for-indesign#readme");
+      });
+      const $markerTemplate = $("#cheatsheet-marker-template");
+      for (const markerName in Markers.CODES) {
+        const marker = Markers.CODES[markerName];
+        const $marker = $markerTemplate.cloneNode(true);
+        $marker.removeAttribute("id");
+        if (marker.code === "dh") {
+          $marker.classList.add("double");
+        }
+        $marker.querySelector(".marker-name").innerHTML = `${markerName}
+				<span class="font-normal"><code>[${marker.code}]</code> or <code>[${marker.char}]</code></span>
+			`;
+        $marker.querySelector(".marker-description").textContent = marker.description;
+        $markerTemplate.parentNode.appendChild($marker);
+      }
+      $markerTemplate.remove();
+      $("#info .cheatsheet").addEventListener("click", (_) => {
+        $("#cheatsheet-plugin-data-folder").value = this.presets.storage.pluginDataFolder;
+        $('dialog[id^="cheatsheet-"]').showModal();
+      });
     }
     applyMagic({ wholeDocument = false }) {
       if (!this.app.activeDocument)

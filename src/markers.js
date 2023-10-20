@@ -8,17 +8,50 @@ import { $, $$, esc } from './utils.js'
 export default class Markers {
 	static CODES =
 	{
-		'Discretionary Hyphen': {char: '~-', code: 'dh'},
-		'Nonbreaking Hyphen': {char: '~~', code: 'nbh'},
-		'Flush Space': {char: '~f', code: 'fs'},
-		'Hair Space': {char: '~|', code: 'hs'},
-		'Forced Line Break': {char: '\\n', code: 'flb'},
-		'Column Break': {char: '~M', code: 'cb'},
-		'Frame Break': {char: '~R', code: 'fb'},
-		'Page Break': {char: '~P', code: 'pb'},
-		'Tab': {char: '\\t', code: 'tab'},
-		'Right Indent Tab': {char: '~y', code: 'rit'},
-		'Indent to Here': {char: '~i', code: 'ith'},
+		'Discretionary Hyphen': {
+			char: '~-', code: 'dh',
+			description: 'Invisible hyphen that only appears at the end of a line when the word breaks. Placed at the start of a word, it prevents the word from breaking.'
+		},
+		'Nonbreaking Hyphen': {
+			char: '~~', code: 'nbh',
+			description: 'Visible hyphen that prevents the word from breaking.'
+		},
+		'Flush Space': {
+			char: '~f', code: 'fs',
+			description: 'Grows to equal space for each flush space in paragraphs that are Fully Justified.'
+		},
+		'Hair Space': {
+			char: '~|', code: 'hs',
+			description: 'Hair space'
+		},
+		'Forced Line Break': {
+			char: '\\n', code: 'flb',
+			description: 'Forces a line break without breaking paragraph.'
+		},
+		'Column Break': {
+			char: '~M', code: 'cb',
+			description: 'Forces following text to begin in the next column.'
+		},
+		'Frame Break': {
+			char: '~R', code: 'fb',
+			description: 'Forces following text to begin in the next text frame.'
+		},
+		'Page Break': {
+			char: '~P', code: 'pb',
+			description: 'Forces following text to begin on the next page.'
+		},
+		'Tab': {
+			char: '\\t', code: 'tab',
+			description: 'Tab character'
+		},
+		'Right Indent Tab': {
+			char: '~y', code: 'rit',
+			description: 'Forces text beyond this marker to align to the right margin.'
+		},
+		'Indent to Here': {
+			char: '~i', code: 'ith',
+			description: 'Forces every following line in a paragraph to indent to the position of this marker.'
+		},
 	}
 
 	toggled = false

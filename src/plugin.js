@@ -6,6 +6,7 @@ import Presets from "./presets";
 import RunButton from "./button-run";
 import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
+import Markers from "./markers";
 
 const {app, ScriptLanguage, UndoModes} = require("indesign");
 const {shell, entrypoints} = require('uxp');
@@ -49,15 +50,43 @@ class MagicMarkupPlugin {
 		})
 
 		// HELP/INFO
-		$('#info .version').textContent = `🌈 v${PLUGIN_VERSION}`
-		$('#info .help').addEventListener('click', async _ => {
-			await shell.openExternal('https://github.com/adamkiss/magic-markup-for-indesign#readme')
-		})
-		$('#info .cheatsheet').addEventListener('click', _ => {$('#cheatsheet-002').showModal()})
+		this.setupInfo()
 	}
 
 	destroy() {}
 	showPanel() {}
+
+	setupInfo() {
+		// info/help
+		$('#info .version').textContent = `🌈 v${PLUGIN_VERSION}`
+		$('#info .help').addEventListener('click', async _ => {
+			await shell.openExternal('https://github.com/adamkiss/magic-markup-for-indesign#readme')
+		})
+
+		// cheatsheet
+		const $markerTemplate = $('#cheatsheet-marker-template')
+		for (const markerName in Markers.CODES) {
+			const marker = Markers.CODES[markerName]
+			const $marker = $markerTemplate.cloneNode(true)
+
+			$marker.removeAttribute('id')
+			if (marker.code === 'dh') {
+				$marker.classList.add('double')
+			}
+			$marker.querySelector('.marker-name').innerHTML = `${markerName}
+				<span class="font-normal"><code>[${marker.code}]</code> or <code>[${marker.char}]</code></span>
+			`
+			$marker.querySelector('.marker-description').textContent = marker.description
+			$markerTemplate.parentNode.appendChild($marker)
+
+		}
+		$markerTemplate.remove()
+
+		$('#info .cheatsheet').addEventListener('click', _ => {
+			$('#cheatsheet-plugin-data-folder').value = this.presets.storage.pluginDataFolder
+			$('dialog[id^="cheatsheet-"]').showModal()
+		})
+	}
 
 	applyMagic({wholeDocument = false}) {
 		// Shouldn't happen, but…
