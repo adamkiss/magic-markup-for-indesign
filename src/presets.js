@@ -60,6 +60,7 @@ export default class Presets extends EventTarget {
 
 		this.$picker.disabled = false
 		this.plugin.loaded = true
+		this.plugin.scope.onChange()
 	}
 
 	onStorageChange(active = false){

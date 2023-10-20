@@ -127,6 +127,8 @@
      * Scope changed, validate and emit event
      */
     onChange() {
+      if (!this.plugin.loaded)
+        return;
       const app2 = this.plugin.app;
       if (app2.documents.length === 0) {
         this.scopeRoot = null;
@@ -474,6 +476,7 @@
       this.updatePresetConfig();
       this.$picker.disabled = false;
       this.plugin.loaded = true;
+      this.plugin.scope.onChange();
     }
     onStorageChange(active = false) {
       this.$storageActive.textContent = active ? "\u2026" : " ";
@@ -744,7 +747,7 @@
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
     PRODUCTION = false;
-    loading = true;
+    loaded = false;
     textareas = {};
     app = null;
     listeners = [];

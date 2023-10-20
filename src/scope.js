@@ -59,6 +59,8 @@ export default class Scope extends EventTarget {
 	 * Scope changed, validate and emit event
 	 */
 	onChange() {
+		if (!this.plugin.loaded) return
+
 		const app = this.plugin.app
 
 		if (app.documents.length === 0) {
