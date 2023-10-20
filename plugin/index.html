@@ -45,6 +45,19 @@
 			<input width="40px" type="text" name="markers-close" id="markers-close" value="]" disabled>
 		</div>
 
+		<sp-field-label for="markers-switch" class="flex">
+			<sp-detail class="disabled">COLLAPSE NEWLINES</sp-detail>
+			<sp-switch id="markers-switch"></sp-switch>
+		</sp-field-label>
+		<sp-field-label for="markers-switch" class="flex">
+			<sp-detail class="disabled">CREATE LINKS FROM URLS</sp-detail>
+			<sp-switch id="markers-switch"></sp-switch>
+		</sp-field-label>
+		<sp-field-label for="markers-switch" class="flex">
+			<sp-detail class="disabled">CREATE LINKS FROM MARKDOWN</sp-detail>
+			<sp-switch id="markers-switch"></sp-switch>
+		</sp-field-label>
+
 		<!-- COMING IN THE FUTURE <sp-divider></sp-divider>
 
 		<sp-detail>Export/Import presets</sp-detail>
@@ -62,6 +75,10 @@
 
 		<sp-divider></sp-divider>
 
+		<sp-button id="test-hyperlinks">Test hyperlinks</sp-button>
+
+		<sp-divider></sp-divider>
+
 		<div size="s" id="info" class="flex ">
 			<button class="cheatsheet">Cheatsheet</button>
 			<button class="help">Help</button>
@@ -74,7 +91,7 @@
 	<dialog id="confirm" style="width: 570px" autofocus>
 		<sp-heading size="s"></sp-heading>
 		<div id="confirm-body"></div>
-		<footer class="flex flex-end">
+		<footer class="flex flex-gap flex-end">
 			<sp-button variant="primary" action="cancel">No</sp-button>
 			<sp-button variant="cta" action="confirm">Yes</sp-button>
 		</footer>
@@ -83,7 +100,7 @@
 	<dialog id="prompt" style="width: 570px">
 		<sp-field-label for="prompt-input"><sp-heading size="s"></sp-heading></sp-field-label>
 		<input type="text" id="prompt-input" autofocus>
-		<footer class="flex flex-end">
+		<footer class="flex flex-gap flex-end">
 			<sp-button variant="primary" action="cancel">No</sp-button>
 			<sp-button variant="cta" action="confirm">Yes</sp-button>
 		</footer>
@@ -98,7 +115,7 @@
 			<sp-divider size="medium"></sp-divider>
 			<sp-body>
 				<div class="flex">
-					<sp-heading size="m" class="flex">Markers</sp-heading>
+					<sp-heading size="m" class="flex">Replace Markers List</sp-heading>
 					<sp-heading size="xs"><span class="font-normal">Examples shown for configuration: open with <code>[</code> and close with <code>]</code></span></sp-heading>
 				</div>
 				<div class="flex flex-thirds flex-wrap flex-align-start">
@@ -172,7 +189,7 @@
 						</sp-body>
 					</div>
 					<div>
-						<sp-heading size="m">Markers</sp-heading>
+						<sp-heading size="m">Replace Markers</sp-heading>
 						<sp-heading size="xs">Usage with config</sp-heading>
 						<code data-s><p>
 							Same character: | and | → |rit|<br>

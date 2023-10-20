@@ -8,14 +8,14 @@ import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
 import Markers from "./markers";
 
-const {app, ScriptLanguage, UndoModes} = require("indesign");
+const {app, ScriptLanguage, UndoModes, Hyperlink} = require("indesign");
 const {shell, entrypoints} = require('uxp');
 const PLUGIN_NAME = '🌈 Magic Markup';
 const PLUGIN_VERSION = require('uxp').versions.plugin;
 
 // The plugin class
 class MagicMarkupPlugin {
-	PRODUCTION = true
+	PRODUCTION = false
 	loaded = false
 
 	textareas = {}
@@ -39,6 +39,7 @@ class MagicMarkupPlugin {
 
 		// Add event listeners
 		this.runButton.addEventListener('click', this.applyMagic)
+		$('#test-hyperlinks').addEventListener('click', this.testHyperlinks.bind(this))
 
 		// Add a menu item (?) to be targeted by a script 🙄
 		cleanUpMenuItems({app, currentPluginName: PLUGIN_NAME})
@@ -141,6 +142,91 @@ class MagicMarkupPlugin {
 		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
 
 		this.runButton.disabled = false
+	}
+
+	_getOrAdd(indesignObject, name) {
+		const existing = indesignObject.itemByName(name)
+		if (existing.isValid) {
+			return existing
+		}
+
+		const newItem = indesignObject.add(name, {name: name})
+		return newItem
+	}
+
+	_replaceTextWithHyperlink({doc, root, index, replace, text, url, style}) {
+		// get or create destination
+		let destination
+		try {
+			destination = doc.hyperlinkURLDestinations.itemByName(url)
+			if (! destination.isValid) { throw new Error('Invalid: Create it instead') }
+		} catch (error) {
+			destination = doc.hyperlinkURLDestinations.add(url)
+		}
+
+		// remove original text
+		root.characters.itemByRange(index, index + replace.length - 2).remove()
+
+		// Find insertion point: either at the end of the root, or at the index
+		const insertAt = root.contents.length === index
+			? root.insertionPoints.lastItem()
+			: root.characters.item(index)
+
+		// insert new text, and create InDesign Objects out of it
+		insertAt.contents = text
+		const textSourceCharacters = root.characters.itemByRange(index, index + text.length - 1)
+		const source = doc.hyperlinkTextSources.add(textSourceCharacters)
+
+		// apply style
+		textSourceCharacters.applyCharacterStyle(style)
+
+		// get unique hyperlink name
+		let name = text
+		let counter = 2
+		while(doc.hyperlinks.itemByName(name).isValid) {
+			name = `${text} ${counter++}`
+		}
+
+		// finally: create hyperlink
+		doc.hyperlinks.add(source, destination, {name})
+	}
+
+	testHyperlinks() {
+		const doc = this.app.activeDocument
+		const {scopeRoot} = this.scope
+		const scopes = Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot]
+		const MDLinkRegexp = /\[(?<text>.*?)\]\((?<url>.*?)\)/i
+		const PureLinkRegexp = /(?<url>https?:\/\/[A-z0-9\.\/\-\-\?=&\[\]]+)/gi
+
+		this.app.doScript(() => {
+
+			ensureCharacterStyles(doc, ['Hyperlink'])
+			const hyperlinkStyle = doc.characterStyles.itemByName('Hyperlink')
+
+			scopes.forEach(root => {
+				let regexpMatch = null
+				while ((regexpMatch = MDLinkRegexp.exec(root.contents)) !== null) {
+					const {index, 0: match, groups: {text, url}} = regexpMatch
+
+					this._replaceTextWithHyperlink({
+						doc, root, index, replace: match, text, url, style: hyperlinkStyle
+					})
+				}
+
+				console.log(root.contents);
+				let pureRegexpMatch = null
+				while ((pureRegexpMatch = PureLinkRegexp.exec(root.contents)) !== null) {
+					const {index, 0: match, groups: {url}} = pureRegexpMatch
+					console.log('ITERATION', root.contents, pureRegexpMatch);
+
+					console.log (root.characters.itemByRange(index, index + match.length - 1));
+					this._replaceTextWithHyperlink({
+						doc, root, index, replace: match, text: url, url, style: hyperlinkStyle
+					})
+				}
+			});
+
+		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
 	}
 }
 
