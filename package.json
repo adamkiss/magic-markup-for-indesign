@@ -8,7 +8,7 @@
     "build": "esbuild --bundle --target=es6 plugin=src/plugin.js style=src/style.css index=src/index.html --external:uxp --external:indesign --outdir=plugin --loader:.html=copy --loader:.css=copy"
   },
   "author": "Adam Kiss",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "devDependencies": {
     "esbuild": "^0.19.5"
   }

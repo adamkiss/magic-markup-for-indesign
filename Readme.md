@@ -13,12 +13,13 @@ Define your markup in a simple a DSL and apply it to a text, in one click of a b
 ### Paragraph styles
 
 ```
-#{1,3} : Header
+# : Header
 ```
 
 - Everything until `:` is part of the pattern, including spaces
 - Last `:` on line counts as separator, so `::::: Weird` would match any line beginning with `::::`
 - Paragraph style name is trimmed (unlike pattern), so it will be set to `Header`, not ` Header`
+- **!** `raw` as a pattern isn't supported; see [Patterns: raw GREP][#patterns--raw-grep]
 
 ### Character styles
 
@@ -32,6 +33,7 @@ __: Underlined
 - Everything until `:` is part of the pattern, including spaces
 - Character style name is trimmed when applied
 - Is matched after Assymetrical character styles
+- **!** `raw` as a pattern isn't supported; see [Patterns: raw GREP][#patterns--raw-grep]
 
 #### Asymmetrical
 
@@ -45,11 +47,48 @@ _-:-_: Snake
 	- `:::: Woot` would parse as `[':', split, ':', split, 'Woot']`
 	- `::::: Dumb Style` would parse as `['::', split, ':', split, 'Woot']`
 	- `::: Double Colon` would not be matched (doesn't match `.+:.+:` pattern, that requires at least four characters)
+- **!** `raw` as the opening pattern isn't supported; see [Patterns: raw GREP][#patterns--raw-grep]
 
-### Invisibles
+### Patterns: raw GREP
 
-TBD. Will replace patterns inside configurable characters like `[\n]` into their invisble characters (`\n` is Forced Line Break, new line without ending Paragraph). will come in v0.6.0
+All the patterns are escaped, so you may freely use any special GREP characters as a part of pattern without worrying. However, for the rare occasion you might want to use the full power of GREP in the patterns, you might prefix the line with `raw:`, and in that case you MUST escape any special GREP character.
+
+One of rare useful examples (for an ordered list from markdown):
+
+```
+raw:\d+\. : List (Ordered)
+```
+
+### Replace Markers
+
+You can turn on Marker replacement; within opening and/OR closing strings (at least one must be defined), you can enter either GREP shortcode or initials, and they will be replaced with the marker:
+
+#### List of markers supporting replacement
+
+Note: Examples use `[` and `]` as open and close strings respectively.
+
+- Discretionary Hyphen: `[~-]` or `[dh]`
+- Nonbreaking Hyphen: `[~~]` or `[nbh]`
+- Flush Space: `[~f]` or `[fs]`
+- Hair Space: `[~|]` or `[hs]`
+- Forced Line Break: `[\n]` or `[flb]`
+- Column Break: `[~M]` or `[cb]`
+- Frame Break: `[~R]` or `[fb]`
+- Page Break: `[~P]` or `[pb]`
+- Tab: `[\t]` or `[tab]`
+- Right Indent Tab: `[~y]` or `[rit]`
+- Indent to Here: `[~i]` or `[ith]`
+
+If you think another character/symbol/marker that isn't easily entered via keyboard might makes sense, let me know and I will add it.
 
 ## Known Issues
 
 - _Very_ occasionally, scope fails to update; It usually happens when clicking _really, really fast_ between a story/textframe and a document. It's a timing issue between InDesign and the plugin and there's nothing to be done.
+
+## Copyright and License
+
+Copyright 2023 Adam Kiss
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this plugin except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
