@@ -183,7 +183,7 @@
         paragraphRaw: "",
         character: [],
         characterRaw: "",
-        invisibles: []
+        markers: { toggled: false, open: "[", close: "]", rules: [] }
       }
     };
     static DEFAULT_ACTIVE_PRESET = "Default";
@@ -357,8 +357,8 @@
     }
   };
 
-  // src/invisibles.js
-  var Invisibles = class _Invisibles {
+  // src/markers.js
+  var Markers = class _Markers {
     static CODES = {
       "Discretionary Hyphen": { char: "~-", code: "dh" },
       "Nonbreaking Hyphen": { char: "~~", code: "nbh" },
@@ -375,10 +375,10 @@
     toggled = false;
     onChangeFn = null;
     constructor({ onChange }) {
-      this.$labels = $$('sp-field-label[for^="invisibles-"] > sp-detail');
-      this.$toggle = $("#invisibles-switch");
-      this.$inputOpen = $("#invisibles-open");
-      this.$inputClose = $("#invisibles-close");
+      this.$labels = $$('sp-field-label[for^="markers-"] > sp-detail');
+      this.$toggle = $("#markers-switch");
+      this.$inputOpen = $("#markers-open");
+      this.$inputClose = $("#markers-close");
       this.$toggle.addEventListener("change", this.onToggle.bind(this));
       this.$inputOpen.addEventListener("input", this.onCharacterChanged.bind(this));
       this.$inputClose.addEventListener("input", this.onCharacterChanged.bind(this));
@@ -391,10 +391,10 @@
       for (const $label of this.$labels) {
         $label.classList.toggle("disabled", !this.toggled);
       }
-      this.onChangeFn({ invisibles: this.value });
+      this.onChangeFn({ markers: this.value });
     }
     onCharacterChanged() {
-      this.onChangeFn({ invisibles: this.value });
+      this.onChangeFn({ markers: this.value });
     }
     get open() {
       return this.$inputOpen.value;
@@ -407,8 +407,8 @@
         return [];
       const op = esc(this.open || "");
       const cl = esc(this.close || "");
-      return Object.keys(_Invisibles.CODES).map((key) => {
-        const { char, code } = _Invisibles.CODES[key];
+      return Object.keys(_Markers.CODES).map((key) => {
+        const { char, code } = _Markers.CODES[key];
         return [
           { findWhat: `${op}(?:${esc(char)}|${code})${cl}` },
           { changeTo: char }
@@ -465,8 +465,8 @@
         parseAsParagraphStyles: false,
         onChange: ({ rules, raw }) => this.onPresetChanged("character", { rules, raw })
       });
-      this.invisibles = new Invisibles({
-        onChange: ({ invisibles }) => this.onPresetChanged("invisibles", invisibles)
+      this.markers = new Markers({
+        onChange: ({ markers }) => this.onPresetChanged("markers", markers)
       });
     }
     onStorageLoaded({ presets, activePreset }) {
@@ -521,8 +521,8 @@
       }
     }
     onPresetChanged(type, value) {
-      if (type === "invisibles") {
-        this.activeConfiguration.invisibles = value;
+      if (type === "markers") {
+        this.activeConfiguration.markers = value;
       } else if (["paragraph", "character"].includes(type)) {
         const { rules, raw } = value;
         this.activeConfiguration[type] = rules;
@@ -616,7 +616,7 @@
     updatePresetConfig() {
       this.$paraStyles.value = this.activeConfiguration.paragraphRaw || "";
       this.$charStyles.value = this.activeConfiguration.characterRaw || "";
-      this.invisibles.value = this.activeConfiguration.invisibles || { toggled: false, open: "<", close: ">" };
+      this.markers.value = this.activeConfiguration.markers || { toggled: false, open: "<", close: ">" };
     }
   };
 
@@ -811,8 +811,8 @@
           { changeTo: "$1", appliedCharacterStyle: rule.style }
         ]);
       }
-      if (config.invisibles?.rules?.length) {
-        greps.push(...config.invisibles.rules);
+      if (config.markers?.rules?.length) {
+        greps.push(...config.markers.rules);
       }
       this.app.doScript(() => {
         for (const [findPrefs, changePrefs] of greps) {

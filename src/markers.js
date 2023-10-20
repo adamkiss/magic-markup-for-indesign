@@ -1,11 +1,11 @@
 import { $, $$, esc } from './utils.js'
 
 /**
- * Responsible for UI and logic of the invisibles feature
+ * Responsible for UI and logic of the markers feature
  *
  * Unlike textareas, which return semi-parsed rules, this class returns final GREP rules
  */
-export default class Invisibles {
+export default class Markers {
 	static CODES =
 	{
 		'Discretionary Hyphen': {char: '~-', code: 'dh'},
@@ -25,10 +25,10 @@ export default class Invisibles {
 	onChangeFn = null
 
 	constructor({onChange}) {
-		this.$labels = $$('sp-field-label[for^="invisibles-"] > sp-detail');
-		this.$toggle = $('#invisibles-switch')
-		this.$inputOpen = $('#invisibles-open')
-		this.$inputClose = $('#invisibles-close')
+		this.$labels = $$('sp-field-label[for^="markers-"] > sp-detail');
+		this.$toggle = $('#markers-switch')
+		this.$inputOpen = $('#markers-open')
+		this.$inputClose = $('#markers-close')
 
 		this.$toggle.addEventListener('change', this.onToggle.bind(this))
 		this.$inputOpen.addEventListener('input', this.onCharacterChanged.bind(this))
@@ -47,11 +47,11 @@ export default class Invisibles {
 			$label.classList.toggle('disabled', !this.toggled)
 		}
 
-		this.onChangeFn({invisibles: this.value})
+		this.onChangeFn({markers: this.value})
 	}
 
 	onCharacterChanged() {
-		this.onChangeFn({invisibles: this.value})
+		this.onChangeFn({markers: this.value})
 	}
 
 	get	open() { return this.$inputOpen.value }
@@ -63,8 +63,8 @@ export default class Invisibles {
 		const op = esc(this.open || '')
 		const cl = esc(this.close || '')
 
-		return Object.keys(Invisibles.CODES).map(key => {
-			const {char, code} = Invisibles.CODES[key]
+		return Object.keys(Markers.CODES).map(key => {
+			const {char, code} = Markers.CODES[key]
 			return [
 				{findWhat: `${op}(?:${esc(char)}|${code})${cl}`},
 				{changeTo: char}

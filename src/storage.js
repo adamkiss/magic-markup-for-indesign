@@ -7,7 +7,7 @@ export default class Storage {
 			paragraphRaw: '',
 			character: [],
 			characterRaw: '',
-			invisibles: []
+			markers: {toggled: false, open: '[', close: ']', rules: []}
 		}
 	}
 	static DEFAULT_ACTIVE_PRESET = 'Default'

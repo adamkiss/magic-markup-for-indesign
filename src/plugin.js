@@ -6,7 +6,6 @@ import Presets from "./presets";
 import RunButton from "./button-run";
 import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
-import Invisibles from "./invisibles";
 
 const {app, ScriptLanguage, UndoModes} = require("indesign");
 const {shell, entrypoints} = require('uxp');
@@ -92,8 +91,8 @@ class MagicMarkupPlugin {
 				{changeTo: '$1', appliedCharacterStyle: rule.style},
 			]);
 		}
-		if (config.invisibles?.rules?.length) {
-			greps.push(...config.invisibles.rules);
+		if (config.markers?.rules?.length) {
+			greps.push(...config.markers.rules);
 		}
 
 		this.app.doScript(() => {
