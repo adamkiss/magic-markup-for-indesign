@@ -12,7 +12,7 @@ import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
 import Markers from "./markers";
 
-const {app, ScriptLanguage, UndoModes, Hyperlink} = require("indesign");
+const {app, ScriptLanguage, UndoModes, Document} = require("indesign");
 const {shell, entrypoints} = require('uxp');
 const PLUGIN_NAME = '🌈 Magic Markup';
 const PLUGIN_VERSION = require('uxp').versions.plugin;
@@ -185,7 +185,9 @@ class MagicMarkupPlugin {
 	testHyperlinks() {
 		const doc = this.app.activeDocument
 		const {scopeRoot} = this.scope
-		const scopes = Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot]
+		const scopes = scopeRoot instanceof Document
+			? scopeRoot.stories.everyItem().getElements()
+			: (Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot])
 
 		this.app.doScript(() => {
 
@@ -202,29 +204,34 @@ class MagicMarkupPlugin {
 				while ((regexpMatch = RegularExpressions.markdownLink.exec(root.contents)) !== null) {
 					const {index, 0: match, groups: {text, url}} = regexpMatch
 
-					// Capture original selection size
-					// Indesign updates the selection if contents change
-					// If match starts at index 0, then the replacement won't be added to the selection
-					// And we need to move the selection manually
-					const {index: originalIndex, length: originalLength} = root
+					try {
+						this._replaceTextWithHyperlink({
+							doc,
+							root: isSelection ? root.parent : root,
+							index: isSelection ? index + root.index : index,
+							replace: match, text, url,
+							style: hyperlinkStyle
+						})
+					} catch (error) {
+						// Show the error for debugging, but continue with the execution
+						// The most probable error: the selection is already a link
+						// We don't want to stop the execution because of this
+						console.error(error)
+					}
 
-					this._replaceTextWithHyperlink({
-						doc,
-						root: isSelection ? root.parent : root,
-						index: isSelection ? index + root.index : index,
-						replace: match, text, url,
-						style: hyperlinkStyle
-					})
-
+					// If we're working over selection, and first match occured at index 0
+					// Indesign won't update the selection to include the new hyperlink
+					// We need to adjust the selection manually
 					if (isSelection && index === 0) {
 						const {index: newIndex, length: newLength} = root
 
-						console.log(newIndex, newLength, text.length)
-
 						// reset the selection to <replaced text> + "new selection"
+						// note: the second part says "length", but it's actually the "end index",
+						// so by adding the length to index before adjustment,
+						// we're actually increasing the "length" of the selection
 						root.parent.characters.itemByRange(
-							newIndex - (text.length - 1), // <- shift index forward
-							newIndex + newLength - 1
+							-(text.length - 1) + newIndex , // <- shift index forward,
+							                     newIndex + newLength - 1 // <- and of range stays the same
 						).select()
 						root = this.app.selection[0]
 					}
@@ -234,22 +241,29 @@ class MagicMarkupPlugin {
 				while ((pureRegexpMatch = RegularExpressions.urlLink.exec(root.contents)) !== null) {
 					const {index, 0: match, groups: {url}} = pureRegexpMatch
 
-					// Capture original selection size
-					// Indesign updates the selection if contents change
-					// We don't want this here, because raw content doesn't change
+					// Capture original selection index & length size
+					// Indesign updates the selection if the contents change,
+					// but raw .contents actually didn't change.
 					const {index: originalIndex, length: originalLength} = root
-					console.log(originalIndex, originalLength)
 
-					this._replaceTextWithHyperlink({
-						doc,
-						root: isSelection ? root.parent : root,
-						index: isSelection ? index + root.index : index,
-						replace: match, text: url, url,
-						style: hyperlinkStyle
-					})
+					try {
+						this._replaceTextWithHyperlink({
+							doc,
+							root: isSelection ? root.parent : root,
+							index: isSelection ? index + root.index : index,
+							replace: match, text: url, url,
+							style: hyperlinkStyle
+						})
+					} catch (error) {
+						// Show the error for debugging, but continue with the execution
+						// The most probable error: the selection is already a link
+						// We don't want to stop the execution because of this
+						// The end result is working link anyway
+						console.error(error)
+					}
 
 					if (isSelection) {
-						// Recreate select of original size
+						// Reset the selection to before the hyperlink creation
 						root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select()
 						root = this.app.selection[0]
 					}

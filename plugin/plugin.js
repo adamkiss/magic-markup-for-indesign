@@ -803,7 +803,7 @@
   };
 
   // src/plugin.js
-  var { app, ScriptLanguage, UndoModes, Hyperlink } = __require("indesign");
+  var { app, ScriptLanguage, UndoModes, Document: Document2 } = __require("indesign");
   var { shell, entrypoints } = __require("uxp");
   var PLUGIN_NAME = "\u{1F308} Magic Markup";
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
@@ -927,7 +927,7 @@
     testHyperlinks() {
       const doc = this.app.activeDocument;
       const { scopeRoot } = this.scope;
-      const scopes = Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot];
+      const scopes = scopeRoot instanceof Document2 ? scopeRoot.stories.everyItem().getElements() : Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot];
       this.app.doScript(() => {
         ensureCharacterStyles(doc, ["Hyperlink"]);
         const hyperlinkStyle = doc.characterStyles.itemByName("Hyperlink");
@@ -937,23 +937,26 @@
           let regexpMatch = null;
           while ((regexpMatch = RegularExpressions.markdownLink.exec(root.contents)) !== null) {
             const { index, 0: match, groups: { text, url } } = regexpMatch;
-            const { index: originalIndex, length: originalLength } = root;
-            this._replaceTextWithHyperlink({
-              doc,
-              root: isSelection ? root.parent : root,
-              index: isSelection ? index + root.index : index,
-              replace: match,
-              text,
-              url,
-              style: hyperlinkStyle
-            });
+            try {
+              this._replaceTextWithHyperlink({
+                doc,
+                root: isSelection ? root.parent : root,
+                index: isSelection ? index + root.index : index,
+                replace: match,
+                text,
+                url,
+                style: hyperlinkStyle
+              });
+            } catch (error) {
+              console.error(error);
+            }
             if (isSelection && index === 0) {
               const { index: newIndex, length: newLength } = root;
-              console.log(newIndex, newLength, text.length);
               root.parent.characters.itemByRange(
-                newIndex - (text.length - 1),
-                // <- shift index forward
+                -(text.length - 1) + newIndex,
+                // <- shift index forward,
                 newIndex + newLength - 1
+                // <- and of range stays the same
               ).select();
               root = this.app.selection[0];
             }
@@ -962,16 +965,19 @@
           while ((pureRegexpMatch = RegularExpressions.urlLink.exec(root.contents)) !== null) {
             const { index, 0: match, groups: { url } } = pureRegexpMatch;
             const { index: originalIndex, length: originalLength } = root;
-            console.log(originalIndex, originalLength);
-            this._replaceTextWithHyperlink({
-              doc,
-              root: isSelection ? root.parent : root,
-              index: isSelection ? index + root.index : index,
-              replace: match,
-              text: url,
-              url,
-              style: hyperlinkStyle
-            });
+            try {
+              this._replaceTextWithHyperlink({
+                doc,
+                root: isSelection ? root.parent : root,
+                index: isSelection ? index + root.index : index,
+                replace: match,
+                text: url,
+                url,
+                style: hyperlinkStyle
+              });
+            } catch (error) {
+              console.error(error);
+            }
             if (isSelection) {
               root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select();
               root = this.app.selection[0];
