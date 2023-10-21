@@ -11,6 +11,7 @@ import RunButton from "./button-run";
 import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
 import Markers from "./markers";
+import cconsole from "./cconsole";
 
 const {app, ScriptLanguage, UndoModes, Document, Story, TextColumn} = require("indesign");
 const {shell, entrypoints} = require('uxp');
@@ -157,8 +158,6 @@ class MagicMarkupPlugin {
 				const isSelection = isSelectionOneOf(root, 'Text', 'Paragraph', 'TextStyleRange')
 				const story = isSelection ? root.parent : root
 
-				console.log(story, story.parent)
-
 				if (!(
 					(story instanceof Story || story instanceof TextColumn)
 					&& story.parent instanceof Document
@@ -182,11 +181,3 @@ class MagicMarkupPlugin {
 
 // Create a new instance of the plugin
 new MagicMarkupPlugin(app)
-
-entrypoints.setup({
-	commands: {
-		applyMagic: () => {
-			console.log('applyMagic')
-		}
-	}
-});

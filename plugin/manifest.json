@@ -20,11 +20,6 @@
 		}
     },
     "entrypoints": [
-		{
-			"type": "command",
-			"id": "applyMagic",
-			"label": "✨ Apply Magic Markup (command)"
-		},
         {
             "type": "panel",
             "id": "magicMarkup",

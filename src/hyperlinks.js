@@ -1,7 +1,7 @@
 const {app,Story, Document, Text, Paragraph, TextStyleRange, TextColumn} = require('indesign')
 
 import cconsole from "./cconsole.js";
-import { itemByNameOrAdd, logAndPass, logAndTrue } from "./utils.js";
+import { itemByNameOrAdd } from "./utils.js";
 
 /*
 Note: Markdown link ISN'T GLOBAL, because when we replace it with a hyperlink,
@@ -96,6 +96,7 @@ export function replaceMarkdownLinks ({
 			// Show the error for debugging, but continue with the execution
 			// The most probable error: the selection is already a link
 			// We don't want to stop the execution because of this
+			cconsole.error('hyperlink-md', error)
 		}
 
 		// If we're working over selection, and first match occured at index 0
@@ -153,6 +154,7 @@ export function replaceRawLinks ({
 			// The most probable error: the selection is already a link
 			// We don't want to stop the execution because of this
 			// The end result is working link anyway
+			cconsole.error('hyperlink-raw', error)
 		}
 
 		if (isSelection) {

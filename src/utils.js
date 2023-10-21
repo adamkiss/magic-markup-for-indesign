@@ -1,4 +1,5 @@
 import {Document} from 'indesign'
+import cconsole from './cconsole'
 
 /**
  * Shorthand for `document.querySelector()`
@@ -17,7 +18,6 @@ export function $ (selector) {
 export function $$ (selector) {
 	return document.querySelectorAll(selector)
 }
-
 
 /**
  * Escape a string for use in a InDesign GREP search.
@@ -42,7 +42,7 @@ export function itemByNameOrAdd(collection, name, options = {}) {
 
 		return item
 	} catch (error) {
-		console.info(`itemByNameOrAdd: Creating ${name}`, error)
+		cconsole.info('itemByNameOrAdd', `itemByNameOrAdd: Creating ${name}`, error)
 	}
 
 	return collection.add(name, options)
@@ -60,7 +60,7 @@ export function isSelectionOneOf(selection, ...types) {
 		const name = selection.constructor.name
 		return types.includes(name)
 	} catch (error) {
-		console.info('isSelectionOneOf:', selection, error)
+		cconsole.info('isSelectionOneOf', selection, error)
 	}
 
 	// We couldn't get the name of constructor, probably
@@ -139,7 +139,7 @@ export function createMenuItem({
 		return true
 	} catch (error) {
 		// Swallow the error
-		console.error(error)
+		cconsole.error('menu-items', 'create', error)
 		return false
 	}
 }
@@ -186,7 +186,7 @@ export function cleanUpMenuItems({app, currentPluginName}) {
 
 		return true
 	} catch (error) {
-		console.error('cleanUpMenuItems', error)
+		cconsole.error('menu-items', 'cleanup', error)
 		return false
 	}
 }
