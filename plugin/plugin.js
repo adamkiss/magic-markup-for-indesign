@@ -8,6 +8,34 @@
   });
 
   // src/utils.js
+  var import_indesign = __require("indesign");
+
+  // src/cconsole.js
+  var cconsole_default = cconsole = {
+    tags: [],
+    _check(tag) {
+      return this.tags.length && !this.tags.includes(tag);
+    },
+    log(tag, ...args) {
+      this._check(tag) && console.log(...args);
+    },
+    info(tag, ...args) {
+      this._check(tag) && console.info(...args);
+    },
+    error(tag, ...args) {
+      this._check(tag) && console.error(...args);
+    },
+    logAndPass(tag, ...args) {
+      this._check(tag) && console.log(...args);
+      return args[args.length - 1];
+    },
+    logAndTrue(tag, ...args) {
+      this._check(tag) && console.log(...args);
+      return true;
+    }
+  };
+
+  // src/utils.js
   function $(selector) {
     return document.querySelector(selector);
   }
@@ -24,7 +52,7 @@
         throw new Error("Invalid: Create it instead");
       return item;
     } catch (error) {
-      console.info(`itemByNameOrAdd: Creating ${name}`, error);
+      cconsole_default.info("itemByNameOrAdd", `itemByNameOrAdd: Creating ${name}`, error);
     }
     return collection.add(name, options);
   }
@@ -33,7 +61,7 @@
       const name = selection.constructor.name;
       return types.includes(name);
     } catch (error) {
-      console.info("isSelectionOneOf:", selection, error);
+      cconsole_default.info("isSelectionOneOf", selection, error);
     }
     return false;
   }
@@ -53,27 +81,27 @@
         charStyles.add({ name });
     });
   }
-  function resetGrepPreferences(app2) {
-    app2.findGrepPreferences = null;
-    app2.changeGrepPreferences = null;
+  function resetGrepPreferences(app3) {
+    app3.findGrepPreferences = null;
+    app3.changeGrepPreferences = null;
   }
   function createMenuItem({
-    app: app2,
+    app: app3,
     pluginName,
     menuItemName,
     invokeCallback
   }) {
     try {
-      const pluginMenu = app2.menus.item("Main").submenus.item("Plug-Ins").submenus.item(pluginName);
+      const pluginMenu = app3.menus.item("Main").submenus.item("Plug-Ins").submenus.item(pluginName);
       const existingMenuItem = pluginMenu.menuItems.itemByName(menuItemName);
       if (!existingMenuItem.isValid) {
-        const menuItem = app2.scriptMenuActions.add(menuItemName);
+        const menuItem = app3.scriptMenuActions.add(menuItemName);
         menuItem.addEventListener("onInvoke", invokeCallback);
         pluginMenu.menuItems.add(menuItem);
       }
       return true;
     } catch (error) {
-      console.error(error);
+      cconsole_default.error("menu-items", "create", error);
       return false;
     }
   }
@@ -85,9 +113,9 @@
       menuItem.remove();
     }
   }
-  function cleanUpMenuItems({ app: app2, currentPluginName }) {
+  function cleanUpMenuItems({ app: app3, currentPluginName }) {
     try {
-      const pluginMenu = app2.menus.item("Main").submenus.item("Plug-Ins");
+      const pluginMenu = app3.menus.item("Main").submenus.item("Plug-Ins");
       removeOldMenuItemsInSubmenu(pluginMenu);
       for (let index = 0; index < pluginMenu.submenus.length; index++) {
         const submenu = pluginMenu.submenus.item(index);
@@ -101,17 +129,109 @@
       }
       return true;
     } catch (error) {
-      console.error("cleanUpMenuItems", error);
+      cconsole_default.error("menu-items", "cleanup", error);
       return false;
     }
   }
-  var RegularExpressions = {
-    markdownLink: /\[(?<text>.*?)\]\((?<url>.*?)\)/i,
-    urlLink: /(?<url>https?:\/\/[A-z0-9\.\/\-\-\?=&\[\]]+)/gi
-  };
+
+  // src/hyperlinks.js
+  var { app, Story, Document: Document2, Text, Paragraph, TextStyleRange, TextColumn } = __require("indesign");
+  var RE_MARKDOWN_LINK = /\[(?<text>.*?)\]\((?<url>(?:https?:\/\/|tel:|mailto:).*?)\)/i;
+  var RE_RAW_LINK = /(?<url>(?:https?:\/\/|tel:|mailto:)[A-z0-9\.\/\-\-\?=&\[\]\+@]+)/gi;
+  function replaceTextWithHyperlink({ story, index, replace, text, url, style }) {
+    const doc = story.parent;
+    if (!((story instanceof Story || story instanceof TextColumn) && story.parent instanceof Document2))
+      return;
+    const destination = itemByNameOrAdd(doc.hyperlinkURLDestinations, url, { name: url });
+    story.characters.itemByRange(index, index + replace.length - 2).remove();
+    const insertAt = story.contents.length === index ? story.insertionPoints.lastItem() : story.characters.item(index);
+    insertAt.contents = text;
+    const textSourceCharacters = story.characters.itemByRange(index, index + text.length - 1);
+    const source = doc.hyperlinkTextSources.add(textSourceCharacters);
+    textSourceCharacters.applyCharacterStyle(style);
+    let name = text;
+    let counter = 2;
+    while (doc.hyperlinks.itemByName(name).isValid) {
+      name = `${text} ${counter++}`;
+    }
+    doc.hyperlinks.add(source, destination, { name });
+    return false;
+  }
+  function replaceMarkdownLinks({
+    root,
+    story,
+    isSelection,
+    hyperlinkStyle
+  }) {
+    RE_MARKDOWN_LINK.lastIndex = null;
+    let nextMatch = null;
+    while ((nextMatch = RE_MARKDOWN_LINK.exec(root.contents)) !== null) {
+      const { index, 0: match, groups: { text, url } } = nextMatch;
+      const originalLength = root.length;
+      try {
+        const breakout = replaceTextWithHyperlink({
+          story,
+          index: isSelection ? index + root.index : index,
+          replace: match,
+          text,
+          url,
+          style: hyperlinkStyle
+        });
+        if (breakout)
+          break;
+      } catch (error) {
+        cconsole_default.error("hyperlink-md", error);
+      }
+      if (isSelection && index === 0) {
+        const { index: newIndex, length: newLength } = root;
+        root.parent.characters.itemByRange(
+          -(text.length - 1) + newIndex,
+          // <- shift index forward,
+          newIndex + newLength - 1
+          // <- the range stays the same
+        ).select();
+      }
+      if (root instanceof Text || root instanceof Paragraph || root instanceof TextStyleRange) {
+        root = app.selection[0];
+      }
+    }
+    return root;
+  }
+  function replaceRawLinks({
+    root,
+    story,
+    isSelection,
+    hyperlinkStyle
+  }) {
+    RE_RAW_LINK.lastIndex = 0;
+    let nextMatch = null;
+    while ((nextMatch = RE_RAW_LINK.exec(root.contents)) !== null) {
+      const { index, 0: match, groups: { url } } = nextMatch;
+      const { index: originalIndex, length: originalLength } = root;
+      try {
+        const breakout = replaceTextWithHyperlink({
+          story,
+          index: isSelection ? index + root.index : index,
+          replace: match,
+          text: url,
+          url,
+          style: hyperlinkStyle
+        });
+        if (breakout)
+          break;
+      } catch (error) {
+        cconsole_default.error("hyperlink-raw", error);
+      }
+      if (isSelection) {
+        root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select();
+        root = app.selection[0];
+      }
+    }
+    return root;
+  }
 
   // src/scope.js
-  var { Application, Document } = __require("indesign");
+  var { Document: Document3 } = __require("indesign");
   var Scope = class extends EventTarget {
     plugin = null;
     scopeRoot = null;
@@ -142,10 +262,14 @@
       return this.scopeRoot !== null;
     }
     get isDocument() {
-      return this.scopeRoot instanceof Document;
+      return this.scopeRoot instanceof Document3;
     }
     get grepTargets() {
       return Array.isArray(this.scopeRoot) ? this.scopeRoot.map((item) => item.parentStory || null).filter((item) => item !== null) : [this.scopeRoot];
+    }
+    get hyperlinkTargets() {
+      const scopes = this.scopeRoot instanceof Document3 ? scopeRoot.stories.everyItem().getElements() : Array.isArray(this.scopeRoot) ? this.scopeRoot : [this.scopeRoot];
+      return scopes;
     }
     /**
      * Scope changed, validate and emit event
@@ -153,33 +277,38 @@
     onChange() {
       if (!this.plugin.loaded)
         return;
-      const app2 = this.plugin.app;
-      if (app2.documents.length === 0) {
+      const app3 = this.plugin.app;
+      if (app3.documents.length === 0) {
         this.scopeRoot = null;
         this.scopeText = "invalid";
         return this.change();
       }
-      if (app2.selection.length === 0) {
-        this.scopeRoot = app2.activeDocument;
+      if (app3.selection.length === 0) {
+        this.scopeRoot = app3.activeDocument;
         this.scopeText = "document";
         return this.change();
       }
-      if (app2.selection.length > 1) {
-        this.scopeRoot = app2.selection;
+      if (app3.selection.length > 1) {
+        this.scopeRoot = app3.selection;
         this.scopeText = "multiple objects";
         return this.change();
       }
-      if (!isSelectionOneOf(app2.selection[0], "TextFrame", "Text", "Paragraph", "InsertionPoint", "TextStyleRange", "TextColumn")) {
+      if (!isSelectionOneOf(app3.selection[0], "TextFrame", "Text", "Paragraph", "InsertionPoint", "TextStyleRange", "TextColumn")) {
         this.scopeRoot = null;
-        this.scopeText = `${app2.selection[0].constructor.name}: unsupported`;
+        this.scopeText = `${app3.selection[0].constructor.name}: unsupported`;
         return this.change();
       }
-      if (isSelectionOneOf(app2.selection[0], "Text", "TextStyleRange", "Paragraph")) {
-        this.scopeRoot = app2.selection[0];
+      if (isSelectionOneOf(app3.selection[0], "TextColumn")) {
+        this.scopeRoot = app3.selection[0].texts.item(0);
+        this.scopeText = "text (column)";
+        return this.change();
+      }
+      if (isSelectionOneOf(app3.selection[0], "Text", "TextStyleRange", "Paragraph")) {
+        this.scopeRoot = app3.selection[0];
         this.scopeText = "selected text";
         return this.change();
       }
-      this.scopeRoot = app2.selection[0].parentStory;
+      this.scopeRoot = app3.selection[0].parentStory;
       this.scopeText = "selected story";
       return this.change();
     }
@@ -248,7 +377,7 @@
       try {
         presets = await this.loadPresets();
       } catch (e) {
-        console.info("Error loading presets, creating default");
+        cconsole_default.info("loading", "Error loading presets, creating default");
         await this.savePresets(_Storage.DEFAULT_PRESETS);
         presets = await this.loadPresets();
       }
@@ -257,7 +386,7 @@
       try {
         activePreset = await this.loadActivePreset();
       } catch (e) {
-        console.info("Error loading active preset, creating default");
+        cconsole_default.info("loading", "Error loading active preset, creating default");
         await this.saveActivePreset(_Storage.DEFAULT_ACTIVE_PRESET);
         activePreset = await this.loadActivePreset();
       }
@@ -768,7 +897,7 @@
   };
 
   // src/button-run.js
-  var { Application: Application2 } = __require("indesign");
+  var { Application } = __require("indesign");
   var RunButton = class extends EventTarget {
     $button = null;
     constructor(plugin) {
@@ -888,7 +1017,7 @@
   };
 
   // src/plugin.js
-  var { app, ScriptLanguage, UndoModes, Document: Document2 } = __require("indesign");
+  var { app: app2, ScriptLanguage, UndoModes, Document: Document4, Story: Story2, TextColumn: TextColumn2 } = __require("indesign");
   var { shell, entrypoints } = __require("uxp");
   var PLUGIN_NAME = "\u{1F308} Magic Markup";
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
@@ -901,8 +1030,8 @@
     scope = null;
     runner = null;
     presets = null;
-    constructor(app2) {
-      this.app = app2;
+    constructor(app3) {
+      this.app = app3;
       this.scope = new Scope(this);
       this.runButton = new RunButton(this);
       this.presets = new Presets(this);
@@ -910,10 +1039,9 @@
       this.promptDialog = new PromptDialog();
       this.applyMagic = this.applyMagic.bind(this);
       this.runButton.addEventListener("click", this.applyMagic);
-      $("#test-hyperlinks").addEventListener("click", this.testHyperlinks.bind(this));
-      cleanUpMenuItems({ app: app2, currentPluginName: PLUGIN_NAME });
+      cleanUpMenuItems({ app: app3, currentPluginName: PLUGIN_NAME });
       createMenuItem({
-        app: app2,
+        app: app3,
         pluginName: PLUGIN_NAME,
         menuItemName: "\u2728 Apply Magic Markup",
         invokeCallback: this.applyMagic.bind(this)
@@ -965,6 +1093,9 @@
       const config = this.presets.activeConfiguration;
       ensureParagraphStyles(this.app.activeDocument, config.paragraph.rules.map((rule) => rule.style));
       ensureCharacterStyles(this.app.activeDocument, config.character.rules.map((rule) => rule.style));
+      if (config["markdown-links"] || config["raw-links"]) {
+        ensureCharacterStyles(this.app.activeDocument, ["Hyperlink"]);
+      }
       const greps = [];
       if (config["collapse-newlines"]?.rules?.length) {
         greps.push(...config["collapse-newlines"].rules);
@@ -994,92 +1125,23 @@
           }
         }
         resetGrepPreferences(this.app);
-      }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
-    }
-    _replaceTextWithHyperlink({ doc, root, index, replace, text, url, style }) {
-      const destination = itemByNameOrAdd(doc.hyperlinkURLDestinations, url, { name: url });
-      root.characters.itemByRange(index, index + replace.length - 2).remove();
-      const insertAt = root.contents.length === index ? root.insertionPoints.lastItem() : root.characters.item(index);
-      insertAt.contents = text;
-      const textSourceCharacters = root.characters.itemByRange(index, index + text.length - 1);
-      const source = doc.hyperlinkTextSources.add(textSourceCharacters);
-      textSourceCharacters.applyCharacterStyle(style);
-      let name = text;
-      let counter = 2;
-      while (doc.hyperlinks.itemByName(name).isValid) {
-        name = `${text} ${counter++}`;
-      }
-      doc.hyperlinks.add(source, destination, { name });
-    }
-    testHyperlinks() {
-      const doc = this.app.activeDocument;
-      const { scopeRoot } = this.scope;
-      const scopes = scopeRoot instanceof Document2 ? scopeRoot.stories.everyItem().getElements() : Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot];
-      this.app.doScript(() => {
-        ensureCharacterStyles(doc, ["Hyperlink"]);
-        const hyperlinkStyle = doc.characterStyles.itemByName("Hyperlink");
-        scopes.forEach((root) => {
+        if ((config["markdown-links"] || config["raw-links"]) !== true)
+          return;
+        const hyperlinkStyle = this.app.activeDocument.characterStyles.itemByName("Hyperlink");
+        this.scope.hyperlinkTargets.forEach((root) => {
           const isSelection = isSelectionOneOf(root, "Text", "Paragraph", "TextStyleRange");
-          console.log(root.index, root.length);
-          let regexpMatch = null;
-          while ((regexpMatch = RegularExpressions.markdownLink.exec(root.contents)) !== null) {
-            const { index, 0: match, groups: { text, url } } = regexpMatch;
-            try {
-              this._replaceTextWithHyperlink({
-                doc,
-                root: isSelection ? root.parent : root,
-                index: isSelection ? index + root.index : index,
-                replace: match,
-                text,
-                url,
-                style: hyperlinkStyle
-              });
-            } catch (error) {
-              console.error(error);
-            }
-            if (isSelection && index === 0) {
-              const { index: newIndex, length: newLength } = root;
-              root.parent.characters.itemByRange(
-                -(text.length - 1) + newIndex,
-                // <- shift index forward,
-                newIndex + newLength - 1
-                // <- and of range stays the same
-              ).select();
-              root = this.app.selection[0];
-            }
+          const story = isSelection ? root.parent : root;
+          if (!((story instanceof Story2 || story instanceof TextColumn2) && story.parent instanceof Document4))
+            return;
+          if (config["markdown-links"] === true) {
+            root = replaceMarkdownLinks({ root, story, isSelection, hyperlinkStyle });
           }
-          let pureRegexpMatch = null;
-          while ((pureRegexpMatch = RegularExpressions.urlLink.exec(root.contents)) !== null) {
-            const { index, 0: match, groups: { url } } = pureRegexpMatch;
-            const { index: originalIndex, length: originalLength } = root;
-            try {
-              this._replaceTextWithHyperlink({
-                doc,
-                root: isSelection ? root.parent : root,
-                index: isSelection ? index + root.index : index,
-                replace: match,
-                text: url,
-                url,
-                style: hyperlinkStyle
-              });
-            } catch (error) {
-              console.error(error);
-            }
-            if (isSelection) {
-              root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select();
-              root = this.app.selection[0];
-            }
+          if (config["raw-links"] === true) {
+            root = replaceRawLinks({ root, story, isSelection, hyperlinkStyle });
           }
         });
       }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
     }
   };
-  new MagicMarkupPlugin(app);
-  entrypoints.setup({
-    commands: {
-      applyMagic: () => {
-        console.log("applyMagic");
-      }
-    }
-  });
+  new MagicMarkupPlugin(app2);
 })();
