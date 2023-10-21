@@ -56,6 +56,7 @@ export default class Storage {
 		let presets
 		try { presets = await this.loadPresets() }
 		catch (e) {
+			console.info('Error loading presets, creating default')
 			await this.savePresets(Storage.DEFAULT_PRESETS)
 			presets = await this.loadPresets()
 		}
@@ -64,6 +65,7 @@ export default class Storage {
 		let activePreset
 		try { activePreset = await this.loadActivePreset() }
 		catch (e) {
+			console.info('Error loading active preset, creating default')
 			await this.saveActivePreset(Storage.DEFAULT_ACTIVE_PRESET)
 			activePreset = await this.loadActivePreset()
 		}

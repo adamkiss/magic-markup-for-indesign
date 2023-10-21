@@ -39,7 +39,9 @@ export function itemByNameOrAdd(collection, name, options = {}) {
 		if (! item.isValid) throw new Error('Invalid: Create it instead')
 
 		return item
-	} catch (error) {}
+	} catch (error) {
+		console.info(`itemByNameOrAdd: Creating ${name}`, error)
+	}
 
 	return collection.add(name, options)
 }
@@ -55,7 +57,9 @@ export function isSelectionOneOf(selection, ...types) {
 	try {
 		const name = selection.constructor.name
 		return types.includes(name)
-	} catch (error) {}
+	} catch (error) {
+		console.info('isSelectionOneOf:', selection, error)
+	}
 
 	// We couldn't get the name of constructor, probably
 	return false
@@ -180,7 +184,7 @@ export function cleanUpMenuItems({app, currentPluginName}) {
 
 		return true
 	} catch (error) {
-		console.error('CLEANUP', error)
+		console.error('cleanUpMenuItems', error)
 		return false
 	}
 }
