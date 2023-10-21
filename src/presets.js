@@ -53,7 +53,6 @@ export default class Presets extends EventTarget {
 			onChange: ({markers}) => this.onPresetChanged('markers', markers)
 		})
 		this.collapseNewlines = new CheckboxNewlines({
-			name : 'collapse-newlines',
 			onChange: ({toggled, rules}) => this.onPresetChanged('collapse-newlines', {toggled, rules})
 		})
 		this.markdownLinks = new Checkbox({
