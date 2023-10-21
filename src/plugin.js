@@ -110,17 +110,17 @@ class MagicMarkupPlugin {
 		this.runButton.disabled = true
 		const config = this.presets.activeConfiguration
 
-		ensureParagraphStyles(this.app.activeDocument, config.paragraph.map(rule => rule.style))
-		ensureCharacterStyles(this.app.activeDocument, config.character.map(rule => rule.style))
+		ensureParagraphStyles(this.app.activeDocument, config.paragraph.rules.map(rule => rule.style))
+		ensureCharacterStyles(this.app.activeDocument, config.character.rules.map(rule => rule.style))
 
 		const greps = []
-		for (const rule of config.paragraph) {
+		for (const rule of config.paragraph.rules) {
 			greps.push([
 				{findWhat: rule.find},
 				{changeTo: '$1', appliedParagraphStyle: rule.style},
 			]);
 		}
-		for (const rule of config.character) {
+		for (const rule of config.character.rules) {
 			greps.push([
 				{findWhat: rule.find},
 				{changeTo: '$1', appliedCharacterStyle: rule.style},

@@ -3,11 +3,25 @@ const lfs = require('uxp').storage.localFileSystem;
 export default class Storage {
 	static DEFAULT_PRESETS = {
 		'Default': {
-			paragraph: [],
-			paragraphRaw: '',
-			character: [],
-			characterRaw: '',
-			markers: {toggled: false, open: '[', close: ']', rules: []}
+			paragraph: {
+				rules: [],
+				raw: ''
+			},
+			character: {
+				rules: [],
+				raw: ''
+			},
+			markers: {
+				rules: [],
+				toggled: false,
+				open: '[', close: ']',
+			},
+			'collapse-newlines': {
+				rules: [],
+				toggled: false,
+			},
+			'markdown-links': false,
+			'raw-links': false,
 		}
 	}
 	static DEFAULT_ACTIVE_PRESET = 'Default'

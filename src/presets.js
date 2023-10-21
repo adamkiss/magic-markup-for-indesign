@@ -125,17 +125,13 @@ export default class Presets extends EventTarget {
 		switch (type) {
 			case 'paragraph':
 			case 'character':
-				const {rules, raw} = value
-				this.activeConfiguration[type] = rules
-				this.activeConfiguration[`${type}Raw`] = raw
-				break;
-			case 'markers':
-				this.activeConfiguration.markers = value
-				break;
 			case 'markdown-links':
 			case 'raw-links':
 				console.log(type, value)
 				this.activeConfiguration[type] = value
+				break;
+			case 'markers':
+				this.activeConfiguration.markers = value
 				break;
 			default:
 		}
@@ -255,8 +251,8 @@ export default class Presets extends EventTarget {
 	updatePresetConfig() {
 		this.reloading = true
 
-		this.$paraStyles.value = this.activeConfiguration.paragraphRaw || ''
-		this.$charStyles.value = this.activeConfiguration.characterRaw || ''
+		this.$paraStyles.value = this.activeConfiguration.paragraph?.raw || ''
+		this.$charStyles.value = this.activeConfiguration.character?.raw || ''
 		this.markers.value = this.activeConfiguration.markers || {toggled: false, open: '<', close: '>'}
 		this.markdownLinks.value = this.activeConfiguration['markdown-links'] || false
 		this.rawLinks.value = this.activeConfiguration['raw-links'] || false
