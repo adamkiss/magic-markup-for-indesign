@@ -1,10 +1,10 @@
-const {Application} = require('indesign')
+import { $ } from "./utils";
 
 import Storage from "./storage";
 import Textarea from "./textarea";
 import Markers from "./markers";
 import Checkbox from "./checkbox";
-import { $ } from "./utils";
+import CheckboxNewlines from "./checkbox-newlines";
 
 /**
  * Manages presets, as well as preset configuration
@@ -51,6 +51,10 @@ export default class Presets extends EventTarget {
 		})
 		this.markers = new Markers({
 			onChange: ({markers}) => this.onPresetChanged('markers', markers)
+		})
+		this.collapseNewlines = new CheckboxNewlines({
+			name : 'collapse-newlines',
+			onChange: ({toggled, rules}) => this.onPresetChanged('collapse-newlines', {toggled, rules})
 		})
 		this.markdownLinks = new Checkbox({
 			name: 'markdown-links',
@@ -122,19 +126,7 @@ export default class Presets extends EventTarget {
 	onPresetChanged(type, value) {
 		if (this.reloading) return
 
-		switch (type) {
-			case 'paragraph':
-			case 'character':
-			case 'markdown-links':
-			case 'raw-links':
-				console.log(type, value)
-				this.activeConfiguration[type] = value
-				break;
-			case 'markers':
-				this.activeConfiguration.markers = value
-				break;
-			default:
-		}
+		this.activeConfiguration[type] = value
 		this.saveToStorage()
 
 		// Force "scope change" to reenable the "Apply" button
@@ -249,11 +241,12 @@ export default class Presets extends EventTarget {
 	}
 
 	updatePresetConfig() {
-		this.reloading = true
+		this.reloading
 
 		this.$paraStyles.value = this.activeConfiguration.paragraph?.raw || ''
 		this.$charStyles.value = this.activeConfiguration.character?.raw || ''
 		this.markers.value = this.activeConfiguration.markers || {toggled: false, open: '<', close: '>'}
+		this.collapseNewlines.value = this.activeConfiguration['collapse-newlines'] || {toggled: false, rules: []}
 		this.markdownLinks.value = this.activeConfiguration['markdown-links'] || false
 		this.rawLinks.value = this.activeConfiguration['raw-links'] || false
 
