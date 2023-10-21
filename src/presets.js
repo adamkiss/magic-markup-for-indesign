@@ -13,6 +13,8 @@ export default class Presets extends EventTarget {
 	plugin = null
 	storage = null
 
+	reloading = false
+
 	presets = null
 	activePresetName = null
 
@@ -118,6 +120,8 @@ export default class Presets extends EventTarget {
 	}
 
 	onPresetChanged(type, value) {
+		if (this.reloading) return
+
 		switch (type) {
 			case 'paragraph':
 			case 'character':
@@ -249,10 +253,14 @@ export default class Presets extends EventTarget {
 	}
 
 	updatePresetConfig() {
+		this.reloading = true
+
 		this.$paraStyles.value = this.activeConfiguration.paragraphRaw || ''
 		this.$charStyles.value = this.activeConfiguration.characterRaw || ''
 		this.markers.value = this.activeConfiguration.markers || {toggled: false, open: '<', close: '>'}
 		this.markdownLinks.value = this.activeConfiguration['markdown-links'] || false
 		this.rawLinks.value = this.activeConfiguration['raw-links'] || false
+
+		this.reloading = false
 	}
 }
