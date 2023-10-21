@@ -117,6 +117,10 @@ export default class Presets extends EventTarget {
 			this.activeConfiguration[`${type}Raw`] = raw
 		} else {}
 		this.saveToStorage()
+
+		// Force "scope change" to reenable the "Apply" button
+		// This is a bit hacky
+		this.plugin.scope.onChange()
 	}
 
 	get activeConfiguration() {
@@ -204,7 +208,9 @@ export default class Presets extends EventTarget {
 	updatePresetSelect() {
 		const HTML = [
 			...Object.keys(this.presets).map(this._mi_preset.bind(this)),
+
 			this._mi_divider(),
+
 			this._mi_command({
 				command: 'rename',
 				text: 'Rename preset',

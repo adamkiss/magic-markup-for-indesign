@@ -149,7 +149,10 @@ class MagicMarkupPlugin {
 
 		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
 
-		this.runButton.disabled = false
+		// Originally, we reenabled the Run Button here,
+		// but we're keeping it disabled until scope and/or preset changes
+		// That will fire off an event that reenables the button
+		// this.runButton.disabled = false
 	}
 
 	_replaceTextWithHyperlink({doc, root, index, replace, text, url, style}) {

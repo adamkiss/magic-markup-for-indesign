@@ -592,6 +592,7 @@
       } else {
       }
       this.saveToStorage();
+      this.plugin.scope.onChange();
     }
     get activeConfiguration() {
       return this.presets[this.activePreset];
@@ -908,7 +909,6 @@
         }
         resetGrepPreferences(this.app);
       }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
-      this.runButton.disabled = false;
     }
     _replaceTextWithHyperlink({ doc, root, index, replace, text, url, style }) {
       const destination = itemByNameOrAdd(doc.hyperlinkURLDestinations, url, { name: url });
