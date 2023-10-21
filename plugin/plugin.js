@@ -17,6 +17,24 @@
   function esc(str) {
     return str.replace(/([.^$*+?~()\[\]{}\\|])/g, "\\$1");
   }
+  function itemByNameOrAdd(collection, name, options = {}) {
+    try {
+      const item = collection.itemByName(name);
+      if (!item.isValid)
+        throw new Error("Invalid: Create it instead");
+      return item;
+    } catch (error) {
+    }
+    return collection.add(name, options);
+  }
+  function isSelectionOneOf(selection, ...types) {
+    try {
+      const name = selection.constructor.name;
+      return types.includes(name);
+    } catch (error) {
+    }
+    return false;
+  }
   function ensureParagraphStyles(document2, names) {
     const paraStyles = document2.paragraphStyles;
     names.map((name) => {
@@ -85,6 +103,10 @@
       return false;
     }
   }
+  var RegularExpressions = {
+    markdownLink: /\[(?<text>.*?)\]\((?<url>.*?)\)/i,
+    urlLink: /(?<url>https?:\/\/[A-z0-9\.\/\-\-\?=&\[\]]+)/gi
+  };
 
   // src/scope.js
   var { Application, Document } = __require("indesign");
@@ -145,18 +167,12 @@
         this.scopeText = "multiple objects";
         return this.change();
       }
-      if (![
-        "TextFrame",
-        "Text",
-        "InsertionPoint",
-        "TextStyleRange",
-        "TextColumn"
-      ].includes(app2.selection[0].constructor.name)) {
+      if (!isSelectionOneOf(app2.selection[0], "TextFrame", "Text", "Paragraph", "InsertionPoint", "TextStyleRange", "TextColumn")) {
         this.scopeRoot = null;
         this.scopeText = `${app2.selection[0].constructor.name}: unsupported`;
         return this.change();
       }
-      if (["Text", "TextStyleRange"].includes(app2.selection[0].constructor.name)) {
+      if (isSelectionOneOf(app2.selection[0], "Text", "TextStyleRange", "Paragraph")) {
         this.scopeRoot = app2.selection[0];
         this.scopeText = "selected text";
         return this.change();
@@ -893,24 +909,8 @@
       }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
       this.runButton.disabled = false;
     }
-    _getOrAdd(indesignObject, name) {
-      const existing = indesignObject.itemByName(name);
-      if (existing.isValid) {
-        return existing;
-      }
-      const newItem = indesignObject.add(name, { name });
-      return newItem;
-    }
     _replaceTextWithHyperlink({ doc, root, index, replace, text, url, style }) {
-      let destination;
-      try {
-        destination = doc.hyperlinkURLDestinations.itemByName(url);
-        if (!destination.isValid) {
-          throw new Error("Invalid: Create it instead");
-        }
-      } catch (error) {
-        destination = doc.hyperlinkURLDestinations.add(url);
-      }
+      const destination = itemByNameOrAdd(doc.hyperlinkURLDestinations, url, { name: url });
       root.characters.itemByRange(index, index + replace.length - 2).remove();
       const insertAt = root.contents.length === index ? root.insertionPoints.lastItem() : root.characters.item(index);
       insertAt.contents = text;
@@ -928,40 +928,54 @@
       const doc = this.app.activeDocument;
       const { scopeRoot } = this.scope;
       const scopes = Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot];
-      const MDLinkRegexp = /\[(?<text>.*?)\]\((?<url>.*?)\)/i;
-      const PureLinkRegexp = /(?<url>https?:\/\/[A-z0-9\.\/\-\-\?=&\[\]]+)/gi;
       this.app.doScript(() => {
         ensureCharacterStyles(doc, ["Hyperlink"]);
         const hyperlinkStyle = doc.characterStyles.itemByName("Hyperlink");
         scopes.forEach((root) => {
+          const isSelection = isSelectionOneOf(root, "Text", "Paragraph", "TextStyleRange");
+          console.log(root.index, root.length);
           let regexpMatch = null;
-          while ((regexpMatch = MDLinkRegexp.exec(root.contents)) !== null) {
+          while ((regexpMatch = RegularExpressions.markdownLink.exec(root.contents)) !== null) {
             const { index, 0: match, groups: { text, url } } = regexpMatch;
+            const { index: originalIndex, length: originalLength } = root;
             this._replaceTextWithHyperlink({
               doc,
-              root,
-              index,
+              root: isSelection ? root.parent : root,
+              index: isSelection ? index + root.index : index,
               replace: match,
               text,
               url,
               style: hyperlinkStyle
             });
+            if (isSelection && index === 0) {
+              const { index: newIndex, length: newLength } = root;
+              console.log(newIndex, newLength, text.length);
+              root.parent.characters.itemByRange(
+                newIndex - (text.length - 1),
+                // <- shift index forward
+                newIndex + newLength - 1
+              ).select();
+              root = this.app.selection[0];
+            }
           }
-          console.log(root.contents);
           let pureRegexpMatch = null;
-          while ((pureRegexpMatch = PureLinkRegexp.exec(root.contents)) !== null) {
+          while ((pureRegexpMatch = RegularExpressions.urlLink.exec(root.contents)) !== null) {
             const { index, 0: match, groups: { url } } = pureRegexpMatch;
-            console.log("ITERATION", root.contents, pureRegexpMatch);
-            console.log(root.characters.itemByRange(index, index + match.length - 1));
+            const { index: originalIndex, length: originalLength } = root;
+            console.log(originalIndex, originalLength);
             this._replaceTextWithHyperlink({
               doc,
-              root,
-              index,
+              root: isSelection ? root.parent : root,
+              index: isSelection ? index + root.index : index,
               replace: match,
               text: url,
               url,
               style: hyperlinkStyle
             });
+            if (isSelection) {
+              root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select();
+              root = this.app.selection[0];
+            }
           }
         });
       }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");

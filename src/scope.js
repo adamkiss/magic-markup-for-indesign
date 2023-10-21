@@ -1,5 +1,5 @@
 const {Application, Document} = require('indesign')
-import {$} from "./utils";
+import {$, isSelectionOneOf} from "./utils";
 
 /**
  * Responsible for resolving and maintaining the scope of the plugin,
@@ -82,16 +82,14 @@ export default class Scope extends EventTarget {
 		}
 
 		// discard unsupport selection types
-		if (! [
-			'TextFrame', 'Text', 'InsertionPoint', 'TextStyleRange', 'TextColumn'
-		].includes(app.selection[0].constructor.name)) {
+		if (!isSelectionOneOf(app.selection[0], 'TextFrame', 'Text', 'Paragraph', 'InsertionPoint', 'TextStyleRange', 'TextColumn')) {
 			this.scopeRoot = null
 			this.scopeText = `${app.selection[0].constructor.name}: unsupported`
 			return this.change()
 		}
 
 		// Set correct scope
-		if (['Text', 'TextStyleRange'].includes(app.selection[0].constructor.name)) {
+		if (isSelectionOneOf(app.selection[0], 'Text', 'TextStyleRange', 'Paragraph')) {
 			this.scopeRoot = app.selection[0]
 			this.scopeText = 'selected text'
 			return this.change()

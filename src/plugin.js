@@ -1,4 +1,8 @@
-import {$, esc, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences, createMenuItem, cleanUpMenuItems} from "./utils";
+import {
+	$, RegularExpressions,
+	itemByNameOrAdd, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences,
+	createMenuItem, cleanUpMenuItems, isSelectionOneOf,
+} from "./utils";
 
 import Scope from "./scope";
 import Presets from "./presets";
@@ -126,6 +130,7 @@ class MagicMarkupPlugin {
 		}
 
 		this.app.doScript(() => {
+			// Run all the GREP rules
 			for (const [findPrefs, changePrefs] of greps) {
 				resetGrepPreferences(this.app);
 
@@ -136,33 +141,19 @@ class MagicMarkupPlugin {
 					target.changeGrep();
 				}
 			}
-
 			resetGrepPreferences(this.app);
+
+			// Replace all the hyperlinks if turned on
+			// WIP
 
 		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
 
 		this.runButton.disabled = false
 	}
 
-	_getOrAdd(indesignObject, name) {
-		const existing = indesignObject.itemByName(name)
-		if (existing.isValid) {
-			return existing
-		}
-
-		const newItem = indesignObject.add(name, {name: name})
-		return newItem
-	}
-
 	_replaceTextWithHyperlink({doc, root, index, replace, text, url, style}) {
 		// get or create destination
-		let destination
-		try {
-			destination = doc.hyperlinkURLDestinations.itemByName(url)
-			if (! destination.isValid) { throw new Error('Invalid: Create it instead') }
-		} catch (error) {
-			destination = doc.hyperlinkURLDestinations.add(url)
-		}
+		const destination = itemByNameOrAdd(doc.hyperlinkURLDestinations, url, {name: url})
 
 		// remove original text
 		root.characters.itemByRange(index, index + replace.length - 2).remove()
@@ -195,8 +186,6 @@ class MagicMarkupPlugin {
 		const doc = this.app.activeDocument
 		const {scopeRoot} = this.scope
 		const scopes = Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot]
-		const MDLinkRegexp = /\[(?<text>.*?)\]\((?<url>.*?)\)/i
-		const PureLinkRegexp = /(?<url>https?:\/\/[A-z0-9\.\/\-\-\?=&\[\]]+)/gi
 
 		this.app.doScript(() => {
 
@@ -204,25 +193,66 @@ class MagicMarkupPlugin {
 			const hyperlinkStyle = doc.characterStyles.itemByName('Hyperlink')
 
 			scopes.forEach(root => {
+
+				const isSelection = isSelectionOneOf(root, 'Text', 'Paragraph', 'TextStyleRange')
+
+				console.log(root.index, root.length)
+
 				let regexpMatch = null
-				while ((regexpMatch = MDLinkRegexp.exec(root.contents)) !== null) {
+				while ((regexpMatch = RegularExpressions.markdownLink.exec(root.contents)) !== null) {
 					const {index, 0: match, groups: {text, url}} = regexpMatch
 
+					// Capture original selection size
+					// Indesign updates the selection if contents change
+					// If match starts at index 0, then the replacement won't be added to the selection
+					// And we need to move the selection manually
+					const {index: originalIndex, length: originalLength} = root
+
 					this._replaceTextWithHyperlink({
-						doc, root, index, replace: match, text, url, style: hyperlinkStyle
+						doc,
+						root: isSelection ? root.parent : root,
+						index: isSelection ? index + root.index : index,
+						replace: match, text, url,
+						style: hyperlinkStyle
 					})
+
+					if (isSelection && index === 0) {
+						const {index: newIndex, length: newLength} = root
+
+						console.log(newIndex, newLength, text.length)
+
+						// reset the selection to <replaced text> + "new selection"
+						root.parent.characters.itemByRange(
+							newIndex - (text.length - 1), // <- shift index forward
+							newIndex + newLength - 1
+						).select()
+						root = this.app.selection[0]
+					}
 				}
 
-				console.log(root.contents);
 				let pureRegexpMatch = null
-				while ((pureRegexpMatch = PureLinkRegexp.exec(root.contents)) !== null) {
+				while ((pureRegexpMatch = RegularExpressions.urlLink.exec(root.contents)) !== null) {
 					const {index, 0: match, groups: {url}} = pureRegexpMatch
-					console.log('ITERATION', root.contents, pureRegexpMatch);
 
-					console.log (root.characters.itemByRange(index, index + match.length - 1));
+					// Capture original selection size
+					// Indesign updates the selection if contents change
+					// We don't want this here, because raw content doesn't change
+					const {index: originalIndex, length: originalLength} = root
+					console.log(originalIndex, originalLength)
+
 					this._replaceTextWithHyperlink({
-						doc, root, index, replace: match, text: url, url, style: hyperlinkStyle
+						doc,
+						root: isSelection ? root.parent : root,
+						index: isSelection ? index + root.index : index,
+						replace: match, text: url, url,
+						style: hyperlinkStyle
 					})
+
+					if (isSelection) {
+						// Recreate select of original size
+						root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select()
+						root = this.app.selection[0]
+					}
 				}
 			});
 

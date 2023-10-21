@@ -27,6 +27,41 @@ export function esc(str) {
 }
 
 /**
+ * Returns item by Name or Adds a new one if it doesn't exist.
+ * @param {any} collection
+ * @param {string} name
+ * @param {Object} options
+ * @returns any
+ */
+export function itemByNameOrAdd(collection, name, options = {}) {
+	try {
+		const item = collection.itemByName(name)
+		if (! item.isValid) throw new Error('Invalid: Create it instead')
+
+		return item
+	} catch (error) {}
+
+	return collection.add(name, options)
+}
+
+/**
+ * Checks if the selection is one of the given types.
+ *
+ * @param {Selection} selection
+ * @param  {...any} types
+ * @returns
+ */
+export function isSelectionOneOf(selection, ...types) {
+	try {
+		const name = selection.constructor.name
+		return types.includes(name)
+	} catch (error) {}
+
+	// We couldn't get the name of constructor, probably
+	return false
+}
+
+/**
  * Creates paragraph styles if they don't exist.
  * @param {Document} document
  * @param {string[]} names
@@ -148,4 +183,23 @@ export function cleanUpMenuItems({app, currentPluginName}) {
 		console.error('CLEANUP', error)
 		return false
 	}
+}
+
+/*
+Note: Markdown link ISN'T GLOBAL, because when we replace it with a hyperlink,
+the internal match index of the regexp no longer matches the end the URL,
+and we might miss some links
+
+[First link](https://example.com) - has length of 33
+First link [Second Link](https://example.com)
+                                 ^ the next match starts here, and we miss the second link
+
+On the other hand, the URL link MUST be global, because the length doesn't
+change when we replace it, 	and we get stuck in a neverending loop
+of matching the same link (actually: we don't, the script fails when try to
+create hyperlink out of existing hyperlink)
+*/
+export const RegularExpressions = {
+	markdownLink: /\[(?<text>.*?)\]\((?<url>.*?)\)/i,
+	urlLink: /(?<url>https?:\/\/[A-z0-9\.\/\-\-\?=&\[\]]+)/gi
 }
