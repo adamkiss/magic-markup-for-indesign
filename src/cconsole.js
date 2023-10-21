@@ -4,7 +4,7 @@ export default cconsole = {
 	],
 
 	_check(tag) {
-		return this.tags.length && !this.tags.includes(tag)
+		return this.tags.length && this.tags.includes(tag)
 	},
 
 	log(tag, ...args) {
