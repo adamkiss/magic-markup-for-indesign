@@ -26,7 +26,6 @@ export default class Checkbox {
 		// set the toggled state
 		this.toggled = this.$toggle.checked
 		this.$label.classList.toggle('disabled', !this.toggled)
-
 		this.onChangeFn({[this.name]: this.toggled})
 	}
 
@@ -36,8 +35,9 @@ export default class Checkbox {
 		}
 	}
 
-	set value({toggled}) {
-		this.toggled = toggled
+	set value(value) {
+		this.toggled = value
+		this.$toggle.checked = value
 		this.onToggle()
 	}
 }
