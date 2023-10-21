@@ -24,6 +24,7 @@
         throw new Error("Invalid: Create it instead");
       return item;
     } catch (error) {
+      console.info(`itemByNameOrAdd: Creating ${name}`, error);
     }
     return collection.add(name, options);
   }
@@ -32,6 +33,7 @@
       const name = selection.constructor.name;
       return types.includes(name);
     } catch (error) {
+      console.info("isSelectionOneOf:", selection, error);
     }
     return false;
   }
@@ -99,7 +101,7 @@
       }
       return true;
     } catch (error) {
-      console.error("CLEANUP", error);
+      console.error("cleanUpMenuItems", error);
       return false;
     }
   }
@@ -195,11 +197,26 @@
   var Storage = class _Storage {
     static DEFAULT_PRESETS = {
       "Default": {
-        paragraph: [],
-        paragraphRaw: "",
-        character: [],
-        characterRaw: "",
-        markers: { toggled: false, open: "[", close: "]", rules: [] }
+        paragraph: {
+          rules: [],
+          raw: ""
+        },
+        character: {
+          rules: [],
+          raw: ""
+        },
+        markers: {
+          rules: [],
+          toggled: false,
+          open: "[",
+          close: "]"
+        },
+        "collapse-newlines": {
+          rules: [],
+          toggled: false
+        },
+        "markdown-links": false,
+        "raw-links": false
       }
     };
     static DEFAULT_ACTIVE_PRESET = "Default";
@@ -231,6 +248,7 @@
       try {
         presets = await this.loadPresets();
       } catch (e) {
+        console.info("Error loading presets, creating default");
         await this.savePresets(_Storage.DEFAULT_PRESETS);
         presets = await this.loadPresets();
       }
@@ -239,6 +257,7 @@
       try {
         activePreset = await this.loadActivePreset();
       } catch (e) {
+        console.info("Error loading active preset, creating default");
         await this.saveActivePreset(_Storage.DEFAULT_ACTIVE_PRESET);
         activePreset = await this.loadActivePreset();
       }
@@ -261,7 +280,7 @@
     }
     async savePresets(presets) {
       this._emitWorking();
-      const written = await this.presetsFile.write(JSON.stringify(presets));
+      const written = await this.presetsFile.write(JSON.stringify(presets, null, 2));
       this._emitDone();
       return written > 0;
     }
@@ -494,11 +513,65 @@
     }
   };
 
+  // src/checkbox.js
+  var Checkbox = class {
+    name = null;
+    toggled = false;
+    onChangeFn = null;
+    constructor({ name, onChange }) {
+      if (!name)
+        throw new Error("Checkbox name is required");
+      this.name = name;
+      this.$label = $(`sp-field-label[for="${name}-switch"] > sp-detail`);
+      this.$toggle = $(`#${name}-switch`);
+      this.$toggle.addEventListener("change", this.onToggle.bind(this));
+      this.onChangeFn = onChange;
+    }
+    onToggle() {
+      this.toggled = this.$toggle.checked;
+      this.$label.classList.toggle("disabled", !this.toggled);
+      this.onChangeFn({ [this.name]: this.toggled });
+    }
+    get value() {
+      return {
+        toggled: this.toggled
+      };
+    }
+    set value(value) {
+      this.toggled = value;
+      this.$toggle.checked = value;
+      this.onToggle();
+    }
+  };
+
+  // src/checkbox-newlines.js
+  var CheckboxNewlines = class extends Checkbox {
+    constructor({ onChange }) {
+      super({ name: "collapse-newlines", onChange });
+    }
+    onToggle() {
+      this.toggled = this.$toggle.checked;
+      this.$label.classList.toggle("disabled", !this.toggled);
+      this.onChangeFn(this.value);
+    }
+    get value() {
+      return {
+        toggled: this.toggled,
+        rules: this.toggled ? [[{ findWhat: "\\r+" }, { changeTo: "\\r" }]] : []
+      };
+    }
+    set value({ toggled }) {
+      this.toggled = toggled;
+      this.$toggle.checked = toggled;
+      this.onToggle();
+    }
+  };
+
   // src/presets.js
-  var { Application: Application2 } = __require("indesign");
   var Presets = class extends EventTarget {
     plugin = null;
     storage = null;
+    reloading = false;
     presets = null;
     activePresetName = null;
     $picker = null;
@@ -529,6 +602,17 @@
       });
       this.markers = new Markers({
         onChange: ({ markers }) => this.onPresetChanged("markers", markers)
+      });
+      this.collapseNewlines = new CheckboxNewlines({
+        onChange: ({ toggled, rules }) => this.onPresetChanged("collapse-newlines", { toggled, rules })
+      });
+      this.markdownLinks = new Checkbox({
+        name: "markdown-links",
+        onChange: (newValue) => this.onPresetChanged("markdown-links", newValue["markdown-links"])
+      });
+      this.rawLinks = new Checkbox({
+        name: "raw-links",
+        onChange: (newValue) => this.onPresetChanged("raw-links", newValue["raw-links"])
       });
     }
     onStorageLoaded({ presets, activePreset }) {
@@ -583,14 +667,9 @@
       }
     }
     onPresetChanged(type, value) {
-      if (type === "markers") {
-        this.activeConfiguration.markers = value;
-      } else if (["paragraph", "character"].includes(type)) {
-        const { rules, raw } = value;
-        this.activeConfiguration[type] = rules;
-        this.activeConfiguration[`${type}Raw`] = raw;
-      } else {
-      }
+      if (this.reloading)
+        return;
+      this.activeConfiguration[type] = value;
       this.saveToStorage();
       this.plugin.scope.onChange();
     }
@@ -677,14 +756,19 @@
       this.$picker.querySelector("sp-menu").innerHTML = HTML;
     }
     updatePresetConfig() {
-      this.$paraStyles.value = this.activeConfiguration.paragraphRaw || "";
-      this.$charStyles.value = this.activeConfiguration.characterRaw || "";
+      this.reloading;
+      this.$paraStyles.value = this.activeConfiguration.paragraph?.raw || "";
+      this.$charStyles.value = this.activeConfiguration.character?.raw || "";
       this.markers.value = this.activeConfiguration.markers || { toggled: false, open: "<", close: ">" };
+      this.collapseNewlines.value = this.activeConfiguration["collapse-newlines"] || { toggled: false, rules: [] };
+      this.markdownLinks.value = this.activeConfiguration["markdown-links"] || false;
+      this.rawLinks.value = this.activeConfiguration["raw-links"] || false;
+      this.reloading = false;
     }
   };
 
   // src/button-run.js
-  var { Application: Application3 } = __require("indesign");
+  var { Application: Application2 } = __require("indesign");
   var RunButton = class extends EventTarget {
     $button = null;
     constructor(plugin) {
@@ -827,7 +911,6 @@
       this.applyMagic = this.applyMagic.bind(this);
       this.runButton.addEventListener("click", this.applyMagic);
       $("#test-hyperlinks").addEventListener("click", this.testHyperlinks.bind(this));
-      $("#test-newlines").addEventListener("click", this.testNewlineCollapse.bind(this));
       cleanUpMenuItems({ app: app2, currentPluginName: PLUGIN_NAME });
       createMenuItem({
         app: app2,
@@ -880,16 +963,19 @@
       }
       this.runButton.disabled = true;
       const config = this.presets.activeConfiguration;
-      ensureParagraphStyles(this.app.activeDocument, config.paragraph.map((rule) => rule.style));
-      ensureCharacterStyles(this.app.activeDocument, config.character.map((rule) => rule.style));
+      ensureParagraphStyles(this.app.activeDocument, config.paragraph.rules.map((rule) => rule.style));
+      ensureCharacterStyles(this.app.activeDocument, config.character.rules.map((rule) => rule.style));
       const greps = [];
-      for (const rule of config.paragraph) {
+      if (config["collapse-newlines"]?.rules?.length) {
+        greps.push(...config["collapse-newlines"].rules);
+      }
+      for (const rule of config.paragraph.rules) {
         greps.push([
           { findWhat: rule.find },
           { changeTo: "$1", appliedParagraphStyle: rule.style }
         ]);
       }
-      for (const rule of config.character) {
+      for (const rule of config.character.rules) {
         greps.push([
           { findWhat: rule.find },
           { changeTo: "$1", appliedCharacterStyle: rule.style }
@@ -985,28 +1071,6 @@
             }
           }
         });
-      }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
-    }
-    testNewlineCollapse() {
-      if (!this.app.activeDocument)
-        return;
-      if (!this.scope)
-        return;
-      this.runButton.disabled = true;
-      const config = this.presets.activeConfiguration;
-      const greps = [
-        [{ findWhat: "\\r+" }, { changeTo: "\\r" }]
-      ];
-      this.app.doScript(() => {
-        for (const [findPrefs, changePrefs] of greps) {
-          resetGrepPreferences(this.app);
-          this.app.findGrepPreferences.properties = findPrefs;
-          this.app.changeGrepPreferences.properties = changePrefs;
-          for (const target of this.scope.grepTargets) {
-            target.changeGrep();
-          }
-        }
-        resetGrepPreferences(this.app);
       }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
     }
   };

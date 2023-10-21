@@ -45,17 +45,17 @@
 			<input width="40px" type="text" name="markers-close" id="markers-close" value="]" disabled>
 		</div>
 
-		<sp-field-label for="markers-switch" class="flex">
+		<sp-field-label for="collapse-newlines-switch" class="flex">
 			<sp-detail class="disabled">COLLAPSE NEWLINES</sp-detail>
-			<sp-switch id="markers-switch"></sp-switch>
+			<sp-switch id="collapse-newlines-switch"></sp-switch>
 		</sp-field-label>
-		<sp-field-label for="markers-switch" class="flex">
-			<sp-detail class="disabled">CREATE LINKS FROM URLS</sp-detail>
-			<sp-switch id="markers-switch"></sp-switch>
+		<sp-field-label for="markdown-links-switch" class="flex">
+			<sp-detail class="disabled">CONVERT MARKDOWN LINKS</sp-detail>
+			<sp-switch id="markdown-links-switch"></sp-switch>
 		</sp-field-label>
-		<sp-field-label for="markers-switch" class="flex">
-			<sp-detail class="disabled">CREATE LINKS FROM MARKDOWN</sp-detail>
-			<sp-switch id="markers-switch"></sp-switch>
+		<sp-field-label for="raw-links-switch" class="flex">
+			<sp-detail class="disabled">RAW URLS TO HYPERLINKS</sp-detail>
+			<sp-switch id="raw-links-switch"></sp-switch>
 		</sp-field-label>
 
 		<!-- COMING IN THE FUTURE <sp-divider></sp-divider>
@@ -76,7 +76,6 @@
 		<sp-divider></sp-divider>
 
 		<sp-button id="test-hyperlinks">Test hyperlinks</sp-button>
-		<sp-button id="test-newlines">Test newlines</sp-button>
 
 		<sp-divider></sp-divider>
 
