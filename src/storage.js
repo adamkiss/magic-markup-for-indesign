@@ -77,7 +77,7 @@ export default class Storage {
 
 	async savePresets(presets) {
 		this._emitWorking()
-		const written = await this.presetsFile.write(JSON.stringify(presets))
+		const written = await this.presetsFile.write(JSON.stringify(presets, null, 2))
 		this._emitDone()
 
 		return written > 0
