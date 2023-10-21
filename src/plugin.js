@@ -44,7 +44,6 @@ class MagicMarkupPlugin {
 		// Add event listeners
 		this.runButton.addEventListener('click', this.applyMagic)
 		$('#test-hyperlinks').addEventListener('click', this.testHyperlinks.bind(this))
-		$('#test-newlines').addEventListener('click', this.testNewlineCollapse.bind(this))
 
 		// Add a menu item (?) to be targeted by a script 🙄
 		cleanUpMenuItems({app, currentPluginName: PLUGIN_NAME})
@@ -114,6 +113,9 @@ class MagicMarkupPlugin {
 		ensureCharacterStyles(this.app.activeDocument, config.character.rules.map(rule => rule.style))
 
 		const greps = []
+		if (config['collapse-newlines']?.rules?.length) {
+			greps.push(...config['collapse-newlines'].rules);
+		}
 		for (const rule of config.paragraph.rules) {
 			greps.push([
 				{findWhat: rule.find},
@@ -275,46 +277,6 @@ class MagicMarkupPlugin {
 			});
 
 		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
-	}
-
-	testNewlineCollapse() {
-		// Shouldn't happen, but…
-		if (! this.app.activeDocument) return
-		if (! this.scope) return
-
-		// if (this.scope.isDocument && wholeDocument !== true) {
-		// 	return this.confirmDialog.show({
-		// 		title: 'Whole document selected!',
-		// 		body: 'Are you sure you want to apply Magic Markup to the whole document?',
-		// 		onSuccess: () => this.applyMagic({wholeDocument: true})
-		// 	})
-		// }
-
-		this.runButton.disabled = true
-		const config = this.presets.activeConfiguration
-
-		const greps = [
-			[{findWhat: '\\r+'}, {changeTo: '\\r' }]
-		]
-
-		this.app.doScript(() => {
-			// Run all the GREP rules
-			for (const [findPrefs, changePrefs] of greps) {
-				resetGrepPreferences(this.app);
-
-				this.app.findGrepPreferences.properties = findPrefs;
-				this.app.changeGrepPreferences.properties = changePrefs;
-
-				for (const target of this.scope.grepTargets) {
-					target.changeGrep();
-				}
-			}
-			resetGrepPreferences(this.app);
-
-		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
-
-		//
-		// this.runButton.disabled = false
 	}
 }
 

@@ -16,7 +16,7 @@ export default class CheckboxNewlines extends Checkbox {
 		return {
 			toggled: this.toggled,
 			rules: this.toggled
-				? [{findWhat: '\\r+'}, {changeTo: '\\r'}]
+				? [ [{findWhat: '\\r+'}, {changeTo: '\\r'}] ]
 				: []
 		}
 	}
