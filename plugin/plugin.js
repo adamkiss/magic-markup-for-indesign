@@ -14,7 +14,7 @@
   var cconsole_default = cconsole = {
     tags: [],
     _check(tag) {
-      return this.tags.length && !this.tags.includes(tag);
+      return this.tags.length && this.tags.includes(tag);
     },
     log(tag, ...args) {
       this._check(tag) && console.log(...args);
@@ -135,12 +135,12 @@
   }
 
   // src/hyperlinks.js
-  var { app, Story, Document: Document2, Text, Paragraph, TextStyleRange, TextColumn } = __require("indesign");
+  var { app, Story, Document: Document2, Text, Paragraph, TextStyleRange, TextFrame } = __require("indesign");
   var RE_MARKDOWN_LINK = /\[(?<text>.*?)\]\((?<url>(?:https?:\/\/|tel:|mailto:).*?)\)/i;
   var RE_RAW_LINK = /(?<url>(?:https?:\/\/|tel:|mailto:)[A-z0-9\.\/\-\-\?=&\[\]\+@]+)/gi;
   function replaceTextWithHyperlink({ story, index, replace, text, url, style }) {
     const doc = story.parent;
-    if (!((story instanceof Story || story instanceof TextColumn) && story.parent instanceof Document2))
+    if (!(story instanceof Story && story.parent instanceof Document2 || story instanceof TextFrame))
       return;
     const destination = itemByNameOrAdd(doc.hyperlinkURLDestinations, url, { name: url });
     story.characters.itemByRange(index, index + replace.length - 2).remove();
@@ -167,7 +167,6 @@
     let nextMatch = null;
     while ((nextMatch = RE_MARKDOWN_LINK.exec(root.contents)) !== null) {
       const { index, 0: match, groups: { text, url } } = nextMatch;
-      const originalLength = root.length;
       try {
         const breakout = replaceTextWithHyperlink({
           story,
@@ -184,7 +183,19 @@
       }
       if (isSelection && index === 0) {
         const { index: newIndex, length: newLength } = root;
-        root.parent.characters.itemByRange(
+        console.log(
+          root,
+          root.parentStory,
+          -(text.length - 1) + newIndex,
+          newIndex + newLength - 1,
+          root.parentStory.characters.itemByRange(
+            -(text.length - 1) + newIndex,
+            // <- shift index forward,
+            newIndex + newLength - 1
+            // <- the range stays the same
+          )
+        );
+        root.parentStory.characters.itemByRange(
           -(text.length - 1) + newIndex,
           // <- shift index forward,
           newIndex + newLength - 1
@@ -223,7 +234,7 @@
         cconsole_default.error("hyperlink-raw", error);
       }
       if (isSelection) {
-        root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select();
+        root.parentStory.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select();
         root = app.selection[0];
       }
     }
@@ -1017,8 +1028,8 @@
   };
 
   // src/plugin.js
-  var { app: app2, ScriptLanguage, UndoModes, Document: Document4, Story: Story2, TextColumn: TextColumn2 } = __require("indesign");
-  var { shell, entrypoints } = __require("uxp");
+  var { app: app2, ScriptLanguage, UndoModes, Document: Document4, Story: Story2, TextFrame: TextFrame2 } = __require("indesign");
+  var { shell } = __require("uxp");
   var PLUGIN_NAME = "\u{1F308} Magic Markup";
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
@@ -1128,10 +1139,13 @@
         if ((config["markdown-links"] || config["raw-links"]) !== true)
           return;
         const hyperlinkStyle = this.app.activeDocument.characterStyles.itemByName("Hyperlink");
+        cconsole_default.log("hyperlink-loop", "scope", this.scope);
         this.scope.hyperlinkTargets.forEach((root) => {
           const isSelection = isSelectionOneOf(root, "Text", "Paragraph", "TextStyleRange");
-          const story = isSelection ? root.parent : root;
-          if (!((story instanceof Story2 || story instanceof TextColumn2) && story.parent instanceof Document4))
+          const story = isSelection || root instanceof TextFrame2 ? root.parentStory : root;
+          cconsole_default.log("hyperlink-loop", root);
+          cconsole_default.log("hyperlink-loop", story);
+          if (!(story instanceof Story2 && story.parent instanceof Document4 || story instanceof TextFrame2))
             return;
           if (config["markdown-links"] === true) {
             root = replaceMarkdownLinks({ root, story, isSelection, hyperlinkStyle });

@@ -13,8 +13,8 @@ import PromptDialog from "./dialog-prompt";
 import Markers from "./markers";
 import cconsole from "./cconsole";
 
-const {app, ScriptLanguage, UndoModes, Document, Story, TextColumn} = require("indesign");
-const {shell, entrypoints} = require('uxp');
+const {app, ScriptLanguage, UndoModes, Document, Story, TextFrame} = require("indesign");
+const {shell} = require('uxp');
 const PLUGIN_NAME = '🌈 Magic Markup';
 const PLUGIN_VERSION = require('uxp').versions.plugin;
 
@@ -154,13 +154,20 @@ class MagicMarkupPlugin {
 
 			const hyperlinkStyle = this.app.activeDocument.characterStyles.itemByName('Hyperlink')
 
+			cconsole.log('hyperlink-loop', 'scope', this.scope)
+
 			this.scope.hyperlinkTargets.forEach(root => {
 				const isSelection = isSelectionOneOf(root, 'Text', 'Paragraph', 'TextStyleRange')
-				const story = isSelection ? root.parent : root
+				const story = (isSelection || root instanceof TextFrame)
+					? root.parentStory
+					: root
+
+				cconsole.log('hyperlink-loop', root)
+				cconsole.log('hyperlink-loop', story)
 
 				if (!(
-					(story instanceof Story || story instanceof TextColumn)
-					&& story.parent instanceof Document
+					(story instanceof Story && story.parent instanceof Document)
+					|| story instanceof TextFrame
 				)) return
 
 				if (config['markdown-links'] === true) {

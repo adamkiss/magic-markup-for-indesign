@@ -1,4 +1,4 @@
-const {app,Story, Document, Text, Paragraph, TextStyleRange, TextColumn} = require('indesign')
+const {app,Story, Document, Text, Paragraph, TextStyleRange, TextFrame} = require('indesign')
 
 import cconsole from "./cconsole.js";
 import { itemByNameOrAdd } from "./utils.js";
@@ -36,8 +36,8 @@ export function replaceTextWithHyperlink({story, index, replace, text, url, styl
 	const doc = story.parent
 
 	if (!(
-		(story instanceof Story || story instanceof TextColumn)
-		&& story.parent instanceof Document
+		(story instanceof Story && story.parent instanceof Document)
+		|| story instanceof TextFrame
 	)) return
 
 	// get or create destination
@@ -81,8 +81,6 @@ export function replaceMarkdownLinks ({
 	while ((nextMatch = RE_MARKDOWN_LINK.exec(root.contents)) !== null) {
 		const {index, 0: match, groups: {text, url}} = nextMatch
 
-		const originalLength = root.length
-
 		try {
 			const breakout = replaceTextWithHyperlink({
 				story,
@@ -105,11 +103,22 @@ export function replaceMarkdownLinks ({
 		if (isSelection && index === 0) {
 			const {index: newIndex, length: newLength} = root
 
+			console.log(
+				root,
+				root.parentStory,
+				-(text.length - 1) + newIndex,
+				newIndex + newLength - 1,
+				root.parentStory.characters.itemByRange(
+					-(text.length - 1) + newIndex, // <- shift index forward,
+										 newIndex + newLength - 1 // <- the range stays the same
+				)
+			);
+
 			// reset the selection to <replaced text> + "new selection"
 			// note: the second part says "length", but it's actually the "end index",
 			// so by adding the length to index before adjustment,
 			// we're actually increasing the "length" of the selection
-			root.parent.characters.itemByRange(
+			root.parentStory.characters.itemByRange(
 				-(text.length - 1) + newIndex , // <- shift index forward,
 									 newIndex + newLength - 1 // <- the range stays the same
 			).select()
@@ -159,7 +168,7 @@ export function replaceRawLinks ({
 
 		if (isSelection) {
 			// Reset the selection to before the hyperlink creation
-			root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select()
+			root.parentStory.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select()
 			root = app.selection[0]
 		}
 	}
