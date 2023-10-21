@@ -1,8 +1,8 @@
 import {
-	$, RegularExpressions,
-	itemByNameOrAdd, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences,
-	createMenuItem, cleanUpMenuItems, isSelectionOneOf,
+	$, ensureParagraphStyles, ensureCharacterStyles, resetGrepPreferences,
+	createMenuItem, cleanUpMenuItems, isSelectionOneOf
 } from "./utils";
+import {replaceMarkdownLinks, replaceRawLinks} from "./hyperlinks";
 
 import Scope from "./scope";
 import Presets from "./presets";
@@ -12,7 +12,7 @@ import ConfirmDialog from "./dialog-confirm";
 import PromptDialog from "./dialog-prompt";
 import Markers from "./markers";
 
-const {app, ScriptLanguage, UndoModes, Document} = require("indesign");
+const {app, ScriptLanguage, UndoModes, Document, Story, TextColumn} = require("indesign");
 const {shell, entrypoints} = require('uxp');
 const PLUGIN_NAME = '🌈 Magic Markup';
 const PLUGIN_VERSION = require('uxp').versions.plugin;
@@ -43,7 +43,6 @@ class MagicMarkupPlugin {
 
 		// Add event listeners
 		this.runButton.addEventListener('click', this.applyMagic)
-		$('#test-hyperlinks').addEventListener('click', this.testHyperlinks.bind(this))
 
 		// Add a menu item (?) to be targeted by a script 🙄
 		cleanUpMenuItems({app, currentPluginName: PLUGIN_NAME})
@@ -111,6 +110,9 @@ class MagicMarkupPlugin {
 
 		ensureParagraphStyles(this.app.activeDocument, config.paragraph.rules.map(rule => rule.style))
 		ensureCharacterStyles(this.app.activeDocument, config.character.rules.map(rule => rule.style))
+		if (config['markdown-links'] || config['raw-links']) {
+			ensureCharacterStyles(this.app.activeDocument, ['Hyperlink'])
+		}
 
 		const greps = []
 		if (config['collapse-newlines']?.rules?.length) {
@@ -147,136 +149,34 @@ class MagicMarkupPlugin {
 			resetGrepPreferences(this.app);
 
 			// Replace all the hyperlinks if turned on
-			// WIP
+			if ((config['markdown-links'] || config['raw-links']) !== true) return
 
+			const hyperlinkStyle = this.app.activeDocument.characterStyles.itemByName('Hyperlink')
+
+			this.scope.hyperlinkTargets.forEach(root => {
+				const isSelection = isSelectionOneOf(root, 'Text', 'Paragraph', 'TextStyleRange')
+				const story = isSelection ? root.parent : root
+
+				console.log(story, story.parent)
+
+				if (!(
+					(story instanceof Story || story instanceof TextColumn)
+					&& story.parent instanceof Document
+				)) return
+
+				if (config['markdown-links'] === true) {
+					root = replaceMarkdownLinks({root, story, isSelection, hyperlinkStyle})
+				}
+				if (config['raw-links'] === true) {
+					root = replaceRawLinks({root, story, isSelection, hyperlinkStyle})
+				}
+			});
 		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
 
 		// Originally, we reenabled the Run Button here,
 		// but we're keeping it disabled until scope and/or preset changes
 		// That will fire off an event that reenables the button
 		// this.runButton.disabled = false
-	}
-
-	_replaceTextWithHyperlink({doc, root, index, replace, text, url, style}) {
-		// get or create destination
-		const destination = itemByNameOrAdd(doc.hyperlinkURLDestinations, url, {name: url})
-
-		// remove original text
-		root.characters.itemByRange(index, index + replace.length - 2).remove()
-
-		// Find insertion point: either at the end of the root, or at the index
-		const insertAt = root.contents.length === index
-			? root.insertionPoints.lastItem()
-			: root.characters.item(index)
-
-		// insert new text, and create InDesign Objects out of it
-		insertAt.contents = text
-		const textSourceCharacters = root.characters.itemByRange(index, index + text.length - 1)
-		const source = doc.hyperlinkTextSources.add(textSourceCharacters)
-
-		// apply style
-		textSourceCharacters.applyCharacterStyle(style)
-
-		// get unique hyperlink name
-		let name = text
-		let counter = 2
-		while(doc.hyperlinks.itemByName(name).isValid) {
-			name = `${text} ${counter++}`
-		}
-
-		// finally: create hyperlink
-		doc.hyperlinks.add(source, destination, {name})
-	}
-
-	testHyperlinks() {
-		const doc = this.app.activeDocument
-		const {scopeRoot} = this.scope
-		const scopes = scopeRoot instanceof Document
-			? scopeRoot.stories.everyItem().getElements()
-			: (Array.isArray(scopeRoot) ? scopeRoot : [scopeRoot])
-
-		this.app.doScript(() => {
-
-			ensureCharacterStyles(doc, ['Hyperlink'])
-			const hyperlinkStyle = doc.characterStyles.itemByName('Hyperlink')
-
-			scopes.forEach(root => {
-
-				const isSelection = isSelectionOneOf(root, 'Text', 'Paragraph', 'TextStyleRange')
-
-				console.log(root.index, root.length)
-
-				let regexpMatch = null
-				while ((regexpMatch = RegularExpressions.markdownLink.exec(root.contents)) !== null) {
-					const {index, 0: match, groups: {text, url}} = regexpMatch
-
-					try {
-						this._replaceTextWithHyperlink({
-							doc,
-							root: isSelection ? root.parent : root,
-							index: isSelection ? index + root.index : index,
-							replace: match, text, url,
-							style: hyperlinkStyle
-						})
-					} catch (error) {
-						// Show the error for debugging, but continue with the execution
-						// The most probable error: the selection is already a link
-						// We don't want to stop the execution because of this
-						console.error(error)
-					}
-
-					// If we're working over selection, and first match occured at index 0
-					// Indesign won't update the selection to include the new hyperlink
-					// We need to adjust the selection manually
-					if (isSelection && index === 0) {
-						const {index: newIndex, length: newLength} = root
-
-						// reset the selection to <replaced text> + "new selection"
-						// note: the second part says "length", but it's actually the "end index",
-						// so by adding the length to index before adjustment,
-						// we're actually increasing the "length" of the selection
-						root.parent.characters.itemByRange(
-							-(text.length - 1) + newIndex , // <- shift index forward,
-							                     newIndex + newLength - 1 // <- and of range stays the same
-						).select()
-						root = this.app.selection[0]
-					}
-				}
-
-				let pureRegexpMatch = null
-				while ((pureRegexpMatch = RegularExpressions.urlLink.exec(root.contents)) !== null) {
-					const {index, 0: match, groups: {url}} = pureRegexpMatch
-
-					// Capture original selection index & length size
-					// Indesign updates the selection if the contents change,
-					// but raw .contents actually didn't change.
-					const {index: originalIndex, length: originalLength} = root
-
-					try {
-						this._replaceTextWithHyperlink({
-							doc,
-							root: isSelection ? root.parent : root,
-							index: isSelection ? index + root.index : index,
-							replace: match, text: url, url,
-							style: hyperlinkStyle
-						})
-					} catch (error) {
-						// Show the error for debugging, but continue with the execution
-						// The most probable error: the selection is already a link
-						// We don't want to stop the execution because of this
-						// The end result is working link anyway
-						console.error(error)
-					}
-
-					if (isSelection) {
-						// Reset the selection to before the hyperlink creation
-						root.parent.characters.itemByRange(originalIndex, originalIndex + originalLength - 1).select()
-						root = this.app.selection[0]
-					}
-				}
-			});
-
-		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
 	}
 }
 

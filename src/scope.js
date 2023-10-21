@@ -1,4 +1,4 @@
-const {Application, Document} = require('indesign')
+const {Document} = require('indesign')
 import {$, isSelectionOneOf} from "./utils";
 
 /**
@@ -55,6 +55,16 @@ export default class Scope extends EventTarget {
 			: [this.scopeRoot]
 	}
 
+	get hyperlinkTargets() {
+		const scopes = this.scopeRoot instanceof Document
+			? scopeRoot.stories.everyItem().getElements()
+			: (Array.isArray(this.scopeRoot)
+				? this.scopeRoot
+				: [this.scopeRoot]
+			)
+		return scopes
+	}
+
 	/**
 	 * Scope changed, validate and emit event
 	 */
@@ -85,6 +95,15 @@ export default class Scope extends EventTarget {
 		if (!isSelectionOneOf(app.selection[0], 'TextFrame', 'Text', 'Paragraph', 'InsertionPoint', 'TextStyleRange', 'TextColumn')) {
 			this.scopeRoot = null
 			this.scopeText = `${app.selection[0].constructor.name}: unsupported`
+			return this.change()
+		}
+
+		if (isSelectionOneOf(app.selection[0], 'TextColumn')) {
+			// We convert TextColumn to Text because it's easier to work with
+			// I can't create TextColumn with multiple texts, so until bug report is filed
+			// we'll just use the first text of the column
+			this.scopeRoot = app.selection[0].texts.item(0)
+			this.scopeText = 'text (column)'
 			return this.change()
 		}
 

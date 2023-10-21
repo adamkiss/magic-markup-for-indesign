@@ -1,3 +1,5 @@
+import {Document} from 'indesign'
+
 /**
  * Shorthand for `document.querySelector()`
  * @param {string} selector
@@ -187,23 +189,4 @@ export function cleanUpMenuItems({app, currentPluginName}) {
 		console.error('cleanUpMenuItems', error)
 		return false
 	}
-}
-
-/*
-Note: Markdown link ISN'T GLOBAL, because when we replace it with a hyperlink,
-the internal match index of the regexp no longer matches the end the URL,
-and we might miss some links
-
-[First link](https://example.com) - has length of 33
-First link [Second Link](https://example.com)
-                                 ^ the next match starts here, and we miss the second link
-
-On the other hand, the URL link MUST be global, because the length doesn't
-change when we replace it, 	and we get stuck in a neverending loop
-of matching the same link (actually: we don't, the script fails when try to
-create hyperlink out of existing hyperlink)
-*/
-export const RegularExpressions = {
-	markdownLink: /\[(?<text>.*?)\]\((?<url>.*?)\)/i,
-	urlLink: /(?<url>https?:\/\/[A-z0-9\.\/\-\-\?=&\[\]]+)/gi
 }
