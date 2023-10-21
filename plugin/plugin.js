@@ -826,6 +826,7 @@
       this.applyMagic = this.applyMagic.bind(this);
       this.runButton.addEventListener("click", this.applyMagic);
       $("#test-hyperlinks").addEventListener("click", this.testHyperlinks.bind(this));
+      $("#test-newlines").addEventListener("click", this.testNewlineCollapse.bind(this));
       cleanUpMenuItems({ app: app2, currentPluginName: PLUGIN_NAME });
       createMenuItem({
         app: app2,
@@ -984,6 +985,28 @@
             }
           }
         });
+      }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
+    }
+    testNewlineCollapse() {
+      if (!this.app.activeDocument)
+        return;
+      if (!this.scope)
+        return;
+      this.runButton.disabled = true;
+      const config = this.presets.activeConfiguration;
+      const greps = [
+        [{ findWhat: "\\r+" }, { changeTo: "\\r" }]
+      ];
+      this.app.doScript(() => {
+        for (const [findPrefs, changePrefs] of greps) {
+          resetGrepPreferences(this.app);
+          this.app.findGrepPreferences.properties = findPrefs;
+          this.app.changeGrepPreferences.properties = changePrefs;
+          for (const target of this.scope.grepTargets) {
+            target.changeGrep();
+          }
+        }
+        resetGrepPreferences(this.app);
       }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
     }
   };
