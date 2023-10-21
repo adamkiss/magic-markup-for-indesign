@@ -3,6 +3,7 @@ const {Application} = require('indesign')
 import Storage from "./storage";
 import Textarea from "./textarea";
 import Markers from "./markers";
+import Checkbox from "./checkbox";
 import { $ } from "./utils";
 
 /**
@@ -48,6 +49,14 @@ export default class Presets extends EventTarget {
 		})
 		this.markers = new Markers({
 			onChange: ({markers}) => this.onPresetChanged('markers', markers)
+		})
+		this.markdownLinks = new Checkbox({
+			name: 'markdown-links',
+			onChange: (newValue) => this.onPresetChanged('markdown-links', newValue['markdown-links'])
+		})
+		this.rawLinks = new Checkbox({
+			name: 'raw-links',
+			onChange: (newValue) => this.onPresetChanged('raw-links', newValue['raw-links'])
 		})
 	}
 
@@ -109,13 +118,23 @@ export default class Presets extends EventTarget {
 	}
 
 	onPresetChanged(type, value) {
-		if (type === 'markers') {
-			this.activeConfiguration.markers = value
-		} else if (['paragraph', 'character'].includes(type)) {
-			const {rules, raw} = value
-			this.activeConfiguration[type] = rules
-			this.activeConfiguration[`${type}Raw`] = raw
-		} else {}
+		switch (type) {
+			case 'paragraph':
+			case 'character':
+				const {rules, raw} = value
+				this.activeConfiguration[type] = rules
+				this.activeConfiguration[`${type}Raw`] = raw
+				break;
+			case 'markers':
+				this.activeConfiguration.markers = value
+				break;
+			case 'markdown-links':
+			case 'raw-links':
+				console.log(type, value)
+				this.activeConfiguration[type] = value
+				break;
+			default:
+		}
 		this.saveToStorage()
 
 		// Force "scope change" to reenable the "Apply" button
@@ -233,5 +252,7 @@ export default class Presets extends EventTarget {
 		this.$paraStyles.value = this.activeConfiguration.paragraphRaw || ''
 		this.$charStyles.value = this.activeConfiguration.characterRaw || ''
 		this.markers.value = this.activeConfiguration.markers || {toggled: false, open: '<', close: '>'}
+		this.markdownLinks.value = this.activeConfiguration['markdown-links'] || false
+		this.rawLinks.value = this.activeConfiguration['raw-links'] || false
 	}
 }
