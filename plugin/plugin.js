@@ -1072,7 +1072,7 @@
   // src/plugin.js
   var { app: app2, ScriptLanguage, UndoModes, Document: Document4, Story: Story2, TextFrame: TextFrame2 } = __require("indesign");
   var { shell } = __require("uxp");
-  var PLUGIN_NAME = "\u{1F308} Magic Markup";
+  var PLUGIN_NAME = "Magic Markup";
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
     constructor(app3) {

@@ -15,7 +15,7 @@ import cconsole from "./cconsole";
 
 const {app, ScriptLanguage, UndoModes, Document, Story, TextFrame} = require("indesign");
 const {shell} = require('uxp');
-const PLUGIN_NAME = '🌈 Magic Markup';
+const PLUGIN_NAME = 'Magic Markup';
 const PLUGIN_VERSION = require('uxp').versions.plugin;
 
 // The plugin class
