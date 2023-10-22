@@ -144,6 +144,8 @@ dialog[id^="cheatsheet-"] > form {
 }
 dialog[id^="cheatsheet-"] header > sp-heading { margin-top: 0; }
 dialog[id^="cheatsheet-"] header > button { margin-top: 0; margin-left: 4px; margin-right: -4px; margin-bottom: -2px; }
+dialog[id^="cheatsheet-"] p { margin-left: 0; margin-right: 0; }
+dialog[id^="cheatsheet-"] .example { margin-bottom: 17px; }
 
 /*******************************************************************************************
 	THEMING SUPPORT

@@ -123,10 +123,10 @@
 					</template>
 				</div>
 				<sp-divider size="small" style="margin-top: 17px;"></sp-divider>
-				<div class="flex flex-thirds flex-align-start">
+				<div class="flex flex-thirds flex-align-start flex-wrap">
 					<div>
 						<sp-heading size="m">Paragraph styles</sp-heading>
-						<div class="flex flex-gap flex-align-start">
+						<div class="example flex flex-gap flex-align-start">
 							<div data-grow>
 								<sp-heading size="xs">Config</sp-heading>
 								<code data-s><p>
@@ -154,7 +154,7 @@
 					</div>
 					<div>
 						<sp-heading size="m">Character styles</sp-heading>
-						<div class="flex flex-gap flex-align-start">
+						<div class="example flex flex-gap flex-align-start">
 							<div data-grow>
 								<sp-heading size="xs">Config</sp-heading>
 								<code data-s><p>
@@ -185,9 +185,9 @@
 						</sp-body>
 					</div>
 					<div>
-						<sp-heading size="m">Replace Markers</sp-heading>
+						<sp-heading size="m">Replace markers</sp-heading>
 						<sp-heading size="xs">Usage with config</sp-heading>
-						<code data-s><p>
+						<code data-s class="example"><p>
 							Same character: | and | → |rit|<br>
 							Different:      &gt; and &lt; → &gt;rit&lt;<br>
 							Open only:      * → *rit<br>
@@ -197,9 +197,39 @@
 							<p>Markers are a small selection of characters that aren't easy to type on a keyboard, or are hard to keep when pasting, and are useful for my usecases. If you're missing one, contact me.</p>
 						</sp-body>
 					</div>
+					<div>
+						<sp-heading size="m">Collapse newlines</sp-heading>
+						<sp-body size="m">
+							<p>Collapses multiple consecutive newlines into a single one. Useful when you're managing paragraph spacing through styles, rather than empty paragraphs.</p>
+						</sp-body>
+					</div>
+					<div>
+						<sp-heading size="m">Convert Markdown links</sp-heading>
+						<sp-body size="m">
+							<p>Converts links in format <code data-s>[the text of hyperlink](http://example.com)</code> to proper InDesign hyperlinks.</p>
+							<p>Supported formats:</p>
+							<ul>
+								<li>— <code data-s>[Website](https://example.com)</code></li>
+								<li>— <code data-s>[Call me](tel:+44444444444)</code></li>
+								<li>— <code data-s>[Email](mailto:adam@example.com)</code></li>
+							</ul>
+						</sp-body>
+					</div>
+					<div>
+						<sp-heading size="m">Convert raw links</sp-heading>
+						<sp-body size="m">
+							<p>Converts raw urls to a hyperlink.</p>
+							<p>Supported formats:</p>
+							<ul>
+								<li>— URLs: <code data-s>http(s)://example.com</code></li>
+								<li>— Tel: <code data-s>tel:+44444444444</code></li>
+								<li>— Email: <code data-s>mailto:adam@example.com</code></li>
+							</ul>
+						</sp-body>
+					</div>
 				</div>
 				<sp-divider size="small" style="margin-top: 17px;"></sp-divider>
-				<sp-heading size="m">Plugin data folder</sp-heading>
+				<sp-heading size="m">Convert Raw</sp-heading>
 				<p>If you need to back up your presets, or look into plugin data folder, it's located here:</p>
 				<input type="text" readonly id="cheatsheet-plugin-data-folder" style="width: 100%">
 			</sp-body>
