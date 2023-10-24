@@ -20,7 +20,7 @@ const PLUGIN_VERSION = require('uxp').versions.plugin;
 
 // The plugin class
 class MagicMarkupPlugin {
-	PRODUCTION = false
+	PRODUCTION = true
 	loaded = false
 
 	textareas = {}

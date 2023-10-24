@@ -1,7 +1,7 @@
 {
     "id": "com.adamkiss.magic-markup",
     "name": "Magic Markup",
-    "version": "0.9.3",
+    "version": "0.9.4",
     "main": "index.html",
     "host": [
         {
