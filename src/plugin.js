@@ -93,6 +93,17 @@ class MagicMarkupPlugin {
 		})
 	}
 
+	_runGrepReplace({findPrefs, changePrefs, targets}) {
+		resetGrepPreferences(this.app);
+
+		this.app.findGrepPreferences.properties = findPrefs;
+		this.app.changeGrepPreferences.properties = changePrefs;
+
+		for (const target of targets) {
+			target.changeGrep();
+		}
+	}
+
 	applyMagic({wholeDocument = false}) {
 		// Shouldn't happen, but…
 		if (! this.app.activeDocument) return
@@ -115,10 +126,9 @@ class MagicMarkupPlugin {
 			ensureCharacterStyles(this.app.activeDocument, ['Hyperlink'])
 		}
 
+		// greps.push(...config['collapse-newlines'].rules);
+
 		const greps = []
-		if (config['collapse-newlines']?.rules?.length) {
-			greps.push(...config['collapse-newlines'].rules);
-		}
 		for (const rule of config.paragraph.rules) {
 			greps.push([
 				{findWhat: rule.find},
@@ -138,19 +148,20 @@ class MagicMarkupPlugin {
 		this.app.doScript(() => {
 			// Run all the GREP rules
 			for (const [findPrefs, changePrefs] of greps) {
-				resetGrepPreferences(this.app);
-
-				this.app.findGrepPreferences.properties = findPrefs;
-				this.app.changeGrepPreferences.properties = changePrefs;
-
-				for (const target of this.scope.grepTargets) {
-					target.changeGrep();
-				}
+				this._runGrepReplace({findPrefs, changePrefs, targets: this.scope.grepTargets})
 			}
 			resetGrepPreferences(this.app);
 
-			// Replace all the hyperlinks if turned on
-			if ((config['markdown-links'] || config['raw-links']) !== true) return
+			// If we're not replacing links, run newlines collapse (needs to be last) and return
+			if ((config['markdown-links'] || config['raw-links']) !== true) {
+				if (config['collapse-newlines']?.rules?.length) {
+					const [findPrefs, changePrefs] = config['collapse-newlines'].rules[0]
+					this._runGrepReplace({findPrefs, changePrefs, targets: this.scope.grepTargets})
+					resetGrepPreferences(this.app);
+				}
+
+				return
+			}
 
 			const hyperlinkStyle = this.app.activeDocument.characterStyles.itemByName('Hyperlink')
 
@@ -177,6 +188,13 @@ class MagicMarkupPlugin {
 					root = replaceRawLinks({root, story, isSelection, hyperlinkStyle})
 				}
 			});
+
+			// Run newlines collapse (needs to be last) if we've run link replacements
+			if (config['collapse-newlines']?.rules?.length) {
+				const [findPrefs, changePrefs] = config['collapse-newlines'].rules[0]
+				this._runGrepReplace({findPrefs, changePrefs, targets: this.scope.grepTargets})
+				resetGrepPreferences(this.app);
+			}
 		}, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, 'Magic Markup: Apply');
 
 		// Originally, we reenabled the Run Button here,

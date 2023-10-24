@@ -1079,6 +1079,14 @@
         $('dialog[id^="cheatsheet-"]').showModal();
       });
     }
+    _runGrepReplace({ findPrefs, changePrefs, targets }) {
+      resetGrepPreferences(this.app);
+      this.app.findGrepPreferences.properties = findPrefs;
+      this.app.changeGrepPreferences.properties = changePrefs;
+      for (const target of targets) {
+        target.changeGrep();
+      }
+    }
     applyMagic({ wholeDocument = false }) {
       if (!this.app.activeDocument)
         return;
@@ -1099,9 +1107,6 @@
         ensureCharacterStyles(this.app.activeDocument, ["Hyperlink"]);
       }
       const greps = [];
-      if (config["collapse-newlines"]?.rules?.length) {
-        greps.push(...config["collapse-newlines"].rules);
-      }
       for (const rule of config.paragraph.rules) {
         greps.push([
           { findWhat: rule.find },
@@ -1119,16 +1124,17 @@
       }
       this.app.doScript(() => {
         for (const [findPrefs, changePrefs] of greps) {
-          resetGrepPreferences(this.app);
-          this.app.findGrepPreferences.properties = findPrefs;
-          this.app.changeGrepPreferences.properties = changePrefs;
-          for (const target of this.scope.grepTargets) {
-            target.changeGrep();
-          }
+          this._runGrepReplace({ findPrefs, changePrefs, targets: this.scope.grepTargets });
         }
         resetGrepPreferences(this.app);
-        if ((config["markdown-links"] || config["raw-links"]) !== true)
+        if ((config["markdown-links"] || config["raw-links"]) !== true) {
+          if (config["collapse-newlines"]?.rules?.length) {
+            const [findPrefs, changePrefs] = config["collapse-newlines"].rules[0];
+            this._runGrepReplace({ findPrefs, changePrefs, targets: this.scope.grepTargets });
+            resetGrepPreferences(this.app);
+          }
           return;
+        }
         const hyperlinkStyle = this.app.activeDocument.characterStyles.itemByName("Hyperlink");
         cconsole_default.log("hyperlink-loop", "scope", this.scope);
         this.scope.hyperlinkTargets.forEach((root) => {
@@ -1145,6 +1151,11 @@
             root = replaceRawLinks({ root, story, isSelection, hyperlinkStyle });
           }
         });
+        if (config["collapse-newlines"]?.rules?.length) {
+          const [findPrefs, changePrefs] = config["collapse-newlines"].rules[0];
+          this._runGrepReplace({ findPrefs, changePrefs, targets: this.scope.grepTargets });
+          resetGrepPreferences(this.app);
+        }
       }, ScriptLanguage.UXPSCRIPT, [], UndoModes.ENTIRE_SCRIPT, "Magic Markup: Apply");
     }
   };

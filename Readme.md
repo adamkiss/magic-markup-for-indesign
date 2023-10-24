@@ -84,7 +84,7 @@ If you think another character/symbol/marker that isn't easily entered via keybo
 ## Known Issues
 
 - _Very_ occasionally, scope fails to update; It usually happens when clicking _really, really fast_ between a story/textframe and a document. It's a timing issue between InDesign and the plugin and there's nothing to be done.
-- Selection doesn't match the original selection with changes - less characters is selected; When the selection mode is selection (i.e. highlighted text inside a text frame or story), and the selection reaches the end of Story (or text column, or text frame – unclear), InDesign occasionaly resolves the selection post-changes differently. I've mitigated the worst of non-matching selection before and after magic (e.g., when the first matched hyperlink was also the start of selection), but I can't find this one.
+- **Collapsing newlines and selection**: Currently (nov 2023), InDesign has a bug where collapsing newlines via GREP might change your selection, i.e. some characters aren't selected that should. It (mostly) occurs if the selection reaches the last line of textframe (so select all for instance). I've mitigated the worst impact by running the newlines collapse last, and fixing the selection post hyperlinks replacement, but ALWAYS DOUBLE CHECK YOUR OUTPUT.
 
 ## Copyright and License
 
