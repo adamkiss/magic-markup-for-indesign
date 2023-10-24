@@ -1,6 +1,4 @@
 (() => {
-  var __defProp = Object.defineProperty;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
     get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
   }) : x)(function(x) {
@@ -8,30 +6,6 @@
       return require.apply(this, arguments);
     throw Error('Dynamic require of "' + x + '" is not supported');
   });
-  var __publicField = (obj, key, value) => {
-    __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-    return value;
-  };
-  var __async = (__this, __arguments, generator) => {
-    return new Promise((resolve, reject) => {
-      var fulfilled = (value) => {
-        try {
-          step(generator.next(value));
-        } catch (e) {
-          reject(e);
-        }
-      };
-      var rejected = (value) => {
-        try {
-          step(generator.throw(value));
-        } catch (e) {
-          reject(e);
-        }
-      };
-      var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
-      step((generator = generator.apply(__this, __arguments)).next());
-    });
-  };
 
   // src/utils.js
   var import_indesign = __require("indesign");
@@ -162,8 +136,8 @@
 
   // src/hyperlinks.js
   var { app, Story, Document: Document2, Text, Paragraph, TextStyleRange, TextFrame } = __require("indesign");
-  var RE_MARKDOWN_LINK = new RegExp("\\[(?<text>.*?)\\]\\((?<url>(?:https?:\\/\\/|tel:|mailto:).*?)\\)", "i");
-  var RE_RAW_LINK = new RegExp("(?<url>(?:https?:\\/\\/|tel:|mailto:)[A-z0-9\\.\\/\\-\\-\\?=&\\[\\]\\+@]+)", "gi");
+  var RE_MARKDOWN_LINK = /\[(?<text>.*?)\]\((?<url>(?:https?:\/\/|tel:|mailto:).*?)\)/i;
+  var RE_RAW_LINK = /(?<url>(?:https?:\/\/|tel:|mailto:)[A-z0-9\.\/\-\-\?=&\[\]\+@]+)/gi;
   function replaceTextWithHyperlink({ story, index, replace, text, url, style }) {
     const doc = story.parent;
     if (!(story instanceof Story && story.parent instanceof Document2 || story instanceof TextFrame))
@@ -209,24 +183,15 @@
       }
       if (isSelection && index === 0) {
         const { index: newIndex, length: newLength } = root;
-        console.log(
-          root,
-          root.parentStory,
-          -(text.length - 1) + newIndex,
-          newIndex + newLength - 1,
+        try {
           root.parentStory.characters.itemByRange(
             -(text.length - 1) + newIndex,
             // <- shift index forward,
             newIndex + newLength - 1
             // <- the range stays the same
-          )
-        );
-        root.parentStory.characters.itemByRange(
-          -(text.length - 1) + newIndex,
-          // <- shift index forward,
-          newIndex + newLength - 1
-          // <- the range stays the same
-        ).select();
+          ).select();
+        } catch (e) {
+        }
       }
       if (root instanceof Text || root instanceof Paragraph || root instanceof TextStyleRange) {
         root = app.selection[0];
@@ -270,11 +235,11 @@
   // src/scope.js
   var { Document: Document3 } = __require("indesign");
   var Scope = class extends EventTarget {
+    plugin = null;
+    scopeRoot = null;
+    scopeText = "\u2026";
     constructor(plugin) {
       super();
-      __publicField(this, "plugin", null);
-      __publicField(this, "scopeRoot", null);
-      __publicField(this, "scopeText", "\u2026");
       this.plugin = plugin;
       this.$ui = $("#scope");
       this.onChange = this.onChange.bind(this);
@@ -360,7 +325,39 @@
 
   // src/storage.js
   var lfs = __require("uxp").storage.localFileSystem;
-  var _Storage = class _Storage {
+  var Storage = class _Storage {
+    static DEFAULT_PRESETS = {
+      "Default": {
+        paragraph: {
+          rules: [],
+          raw: ""
+        },
+        character: {
+          rules: [],
+          raw: ""
+        },
+        markers: {
+          rules: [],
+          toggled: false,
+          open: "[",
+          close: "]"
+        },
+        "collapse-newlines": {
+          rules: [],
+          toggled: false
+        },
+        "markdown-links": false,
+        "raw-links": false
+      }
+    };
+    static DEFAULT_ACTIVE_PRESET = "Default";
+    intialized = false;
+    onChange = () => {
+    };
+    pluginDataFolder = null;
+    presetsFile = null;
+    activePresetFile = null;
+    presets = null;
     constructor({
       presets,
       onLoad = (_) => {
@@ -368,45 +365,36 @@
       onChange = (_) => {
       }
     }) {
-      __publicField(this, "intialized", false);
-      __publicField(this, "onChange", () => {
-      });
-      __publicField(this, "pluginDataFolder", null);
-      __publicField(this, "presetsFile", null);
-      __publicField(this, "activePresetFile", null);
-      __publicField(this, "presets", null);
       this.presets = presets;
       this.onChange = onChange;
       this.onChange(true);
       this.init(onLoad);
     }
-    init(onLoadCallback) {
-      return __async(this, null, function* () {
-        if (this.intialized)
-          return;
-        this.pluginDataFolder = (yield lfs.getDataFolder()).nativePath;
-        this.presetsFile = yield lfs.createEntryWithUrl("plugin-data:/presets.json", { overwrite: true });
-        let presets;
-        try {
-          presets = yield this.loadPresets();
-        } catch (e) {
-          cconsole_default.info("loading", "Error loading presets, creating default");
-          yield this.savePresets(_Storage.DEFAULT_PRESETS);
-          presets = yield this.loadPresets();
-        }
-        this.activePresetFile = yield lfs.createEntryWithUrl("plugin-data:/active-preset.json", { overwrite: true });
-        let activePreset;
-        try {
-          activePreset = yield this.loadActivePreset();
-        } catch (e) {
-          cconsole_default.info("loading", "Error loading active preset, creating default");
-          yield this.saveActivePreset(_Storage.DEFAULT_ACTIVE_PRESET);
-          activePreset = yield this.loadActivePreset();
-        }
-        this.intialized = true;
-        this.onChange(false);
-        return onLoadCallback({ presets, activePreset });
-      });
+    async init(onLoadCallback) {
+      if (this.intialized)
+        return;
+      this.pluginDataFolder = (await lfs.getDataFolder()).nativePath;
+      this.presetsFile = await lfs.createEntryWithUrl("plugin-data:/presets.json", { overwrite: true });
+      let presets;
+      try {
+        presets = await this.loadPresets();
+      } catch (e) {
+        cconsole_default.info("loading", "Error loading presets, creating default");
+        await this.savePresets(_Storage.DEFAULT_PRESETS);
+        presets = await this.loadPresets();
+      }
+      this.activePresetFile = await lfs.createEntryWithUrl("plugin-data:/active-preset.json", { overwrite: true });
+      let activePreset;
+      try {
+        activePreset = await this.loadActivePreset();
+      } catch (e) {
+        cconsole_default.info("loading", "Error loading active preset, creating default");
+        await this.saveActivePreset(_Storage.DEFAULT_ACTIVE_PRESET);
+        activePreset = await this.loadActivePreset();
+      }
+      this.intialized = true;
+      this.onChange(false);
+      return onLoadCallback({ presets, activePreset });
     }
     _emitWorking() {
       this.onChange(true);
@@ -414,85 +402,52 @@
     _emitDone() {
       this.onChange(false);
     }
-    loadPresets() {
-      return __async(this, null, function* () {
-        this._emitWorking();
-        const data = yield this.presetsFile.read();
-        const parsed = JSON.parse(data);
-        this._emitDone();
-        return parsed;
-      });
+    async loadPresets() {
+      this._emitWorking();
+      const data = await this.presetsFile.read();
+      const parsed = JSON.parse(data);
+      this._emitDone();
+      return parsed;
     }
-    savePresets(presets) {
-      return __async(this, null, function* () {
-        this._emitWorking();
-        const written = yield this.presetsFile.write(JSON.stringify(presets, null, 2));
-        this._emitDone();
-        return written > 0;
-      });
+    async savePresets(presets) {
+      this._emitWorking();
+      const written = await this.presetsFile.write(JSON.stringify(presets, null, 2));
+      this._emitDone();
+      return written > 0;
     }
-    loadActivePreset() {
-      return __async(this, null, function* () {
-        this._emitWorking();
-        const data = yield this.activePresetFile.read();
-        const parsed = JSON.parse(data);
-        this._emitDone();
-        return parsed;
-      });
+    async loadActivePreset() {
+      this._emitWorking();
+      const data = await this.activePresetFile.read();
+      const parsed = JSON.parse(data);
+      this._emitDone();
+      return parsed;
     }
-    saveActivePreset(activePreset) {
-      return __async(this, null, function* () {
-        this._emitWorking();
-        const written = yield this.activePresetFile.write(JSON.stringify(activePreset));
-        this._emitDone();
-        return written > 0;
-      });
+    async saveActivePreset(activePreset) {
+      this._emitWorking();
+      const written = await this.activePresetFile.write(JSON.stringify(activePreset));
+      this._emitDone();
+      return written > 0;
     }
-    saveAll(_0) {
-      return __async(this, arguments, function* ({ presets, activePreset }) {
-        yield this.savePresets(presets);
-        yield this.saveActivePreset(activePreset);
-      });
+    async saveAll({ presets, activePreset }) {
+      await this.savePresets(presets);
+      await this.saveActivePreset(activePreset);
     }
   };
-  __publicField(_Storage, "DEFAULT_PRESETS", {
-    "Default": {
-      paragraph: {
-        rules: [],
-        raw: ""
-      },
-      character: {
-        rules: [],
-        raw: ""
-      },
-      markers: {
-        rules: [],
-        toggled: false,
-        open: "[",
-        close: "]"
-      },
-      "collapse-newlines": {
-        rules: [],
-        toggled: false
-      },
-      "markdown-links": false,
-      "raw-links": false
-    }
-  });
-  __publicField(_Storage, "DEFAULT_ACTIVE_PRESET", "Default");
-  var Storage = _Storage;
 
   // src/textarea.js
-  var _Textarea = class _Textarea {
+  var Textarea = class _Textarea {
+    static MIN_HEIGHT = 5;
+    static MATCHER_SINGLE = /^(.+):\s*(.+)$/;
+    static MATCHER_BEGIN_END = /^(.+):(.+):\s*(.+)$/;
+    $ = null;
+    parseAsParagraphStyles = true;
+    debounce = null;
     constructor({
       $element,
       parseAsParagraphStyles = true,
       onChange = () => {
       }
     }) {
-      __publicField(this, "$", null);
-      __publicField(this, "parseAsParagraphStyles", true);
-      __publicField(this, "debounce", null);
       this.$ = $element;
       this.parseAsParagraphStyles = parseAsParagraphStyles;
       this.$.addEventListener("input", this.input.bind(this));
@@ -569,16 +524,69 @@
       this.autosize();
     }
   };
-  __publicField(_Textarea, "MIN_HEIGHT", 5);
-  __publicField(_Textarea, "MATCHER_SINGLE", /^(.+):\s*(.+)$/);
-  __publicField(_Textarea, "MATCHER_BEGIN_END", /^(.+):(.+):\s*(.+)$/);
-  var Textarea = _Textarea;
 
   // src/markers.js
-  var _Markers = class _Markers {
+  var Markers = class _Markers {
+    static CODES = {
+      "Discretionary Hyphen": {
+        char: "~-",
+        code: "dh",
+        description: "Invisible hyphen that only appears at the end of a line when the word breaks. Placed at the start of a word, it prevents the word from breaking."
+      },
+      "Nonbreaking Hyphen": {
+        char: "~~",
+        code: "nbh",
+        description: "Visible hyphen that prevents the word from breaking."
+      },
+      "Flush Space": {
+        char: "~f",
+        code: "fs",
+        description: "Grows to equal space for each flush space in paragraphs that are Fully Justified."
+      },
+      "Hair Space": {
+        char: "~|",
+        code: "hs",
+        description: "Hair space"
+      },
+      "Forced Line Break": {
+        char: "\\n",
+        code: "flb",
+        description: "Forces a line break without breaking paragraph."
+      },
+      "Column Break": {
+        char: "~M",
+        code: "cb",
+        description: "Forces following text to begin in the next column."
+      },
+      "Frame Break": {
+        char: "~R",
+        code: "fb",
+        description: "Forces following text to begin in the next text frame."
+      },
+      "Page Break": {
+        char: "~P",
+        code: "pb",
+        description: "Forces following text to begin on the next page."
+      },
+      "Tab": {
+        char: "\\t",
+        code: "tab",
+        description: "Tab character"
+      },
+      "Right Indent Tab": {
+        char: "~y",
+        code: "rit",
+        description: "Forces text beyond this marker to align to the right margin."
+      },
+      "Indent to Here": {
+        char: "~i",
+        code: "ith",
+        description: "Forces every following line in a paragraph to indent to the position of this marker."
+      }
+    };
+    toggled = false;
+    onChangeFn = null;
     constructor({ onChange }) {
-      __publicField(this, "toggled", false);
-      __publicField(this, "onChangeFn", null);
       this.$labels = $$('sp-field-label[for^="markers-"] > sp-detail');
       this.$toggle = $("#markers-switch");
       this.$inputOpen = $("#markers-open");
@@ -635,71 +643,13 @@
       this.onToggle();
     }
   };
-  __publicField(_Markers, "CODES", {
-    "Discretionary Hyphen": {
-      char: "~-",
-      code: "dh",
-      description: "Invisible hyphen that only appears at the end of a line when the word breaks. Placed at the start of a word, it prevents the word from breaking."
-    },
-    "Nonbreaking Hyphen": {
-      char: "~~",
-      code: "nbh",
-      description: "Visible hyphen that prevents the word from breaking."
-    },
-    "Flush Space": {
-      char: "~f",
-      code: "fs",
-      description: "Grows to equal space for each flush space in paragraphs that are Fully Justified."
-    },
-    "Hair Space": {
-      char: "~|",
-      code: "hs",
-      description: "Hair space"
-    },
-    "Forced Line Break": {
-      char: "\\n",
-      code: "flb",
-      description: "Forces a line break without breaking paragraph."
-    },
-    "Column Break": {
-      char: "~M",
-      code: "cb",
-      description: "Forces following text to begin in the next column."
-    },
-    "Frame Break": {
-      char: "~R",
-      code: "fb",
-      description: "Forces following text to begin in the next text frame."
-    },
-    "Page Break": {
-      char: "~P",
-      code: "pb",
-      description: "Forces following text to begin on the next page."
-    },
-    "Tab": {
-      char: "\\t",
-      code: "tab",
-      description: "Tab character"
-    },
-    "Right Indent Tab": {
-      char: "~y",
-      code: "rit",
-      description: "Forces text beyond this marker to align to the right margin."
-    },
-    "Indent to Here": {
-      char: "~i",
-      code: "ith",
-      description: "Forces every following line in a paragraph to indent to the position of this marker."
-    }
-  });
-  var Markers = _Markers;
 
   // src/checkbox.js
   var Checkbox = class {
+    name = null;
+    toggled = false;
+    onChangeFn = null;
     constructor({ name, onChange }) {
-      __publicField(this, "name", null);
-      __publicField(this, "toggled", false);
-      __publicField(this, "onChangeFn", null);
       if (!name)
         throw new Error("Checkbox name is required");
       this.name = name;
@@ -750,16 +700,16 @@
 
   // src/presets.js
   var Presets = class extends EventTarget {
+    plugin = null;
+    storage = null;
+    reloading = false;
+    presets = null;
+    activePresetName = null;
+    $picker = null;
+    $paraStyles = null;
+    $charStyles = null;
     constructor(plugin) {
       super();
-      __publicField(this, "plugin", null);
-      __publicField(this, "storage", null);
-      __publicField(this, "reloading", false);
-      __publicField(this, "presets", null);
-      __publicField(this, "activePresetName", null);
-      __publicField(this, "$picker", null);
-      __publicField(this, "$paraStyles", null);
-      __publicField(this, "$charStyles", null);
       this.plugin = plugin;
       this.$storageActive = $("#storage-active");
       this.onStorageLoaded = this.onStorageLoaded.bind(this);
@@ -937,10 +887,9 @@
       this.$picker.querySelector("sp-menu").innerHTML = HTML;
     }
     updatePresetConfig() {
-      var _a, _b;
       this.reloading;
-      this.$paraStyles.value = ((_a = this.activeConfiguration.paragraph) == null ? void 0 : _a.raw) || "";
-      this.$charStyles.value = ((_b = this.activeConfiguration.character) == null ? void 0 : _b.raw) || "";
+      this.$paraStyles.value = this.activeConfiguration.paragraph?.raw || "";
+      this.$charStyles.value = this.activeConfiguration.character?.raw || "";
       this.markers.value = this.activeConfiguration.markers || { toggled: false, open: "<", close: ">" };
       this.collapseNewlines.value = this.activeConfiguration["collapse-newlines"] || { toggled: false, rules: [] };
       this.markdownLinks.value = this.activeConfiguration["markdown-links"] || false;
@@ -952,9 +901,9 @@
   // src/button-run.js
   var { Application } = __require("indesign");
   var RunButton = class extends EventTarget {
+    $button = null;
     constructor(plugin) {
       super();
-      __publicField(this, "$button", null);
       this.plugin = plugin;
       this.$button = $("#button-run");
       this.plugin.scope.addEventListener("change", this.onScopeChange.bind(this));
@@ -977,11 +926,11 @@
 
   // src/dialog-confirm.js
   var ConfirmDialog = class extends EventTarget {
+    onSuccessFn = null;
+    successListener = null;
+    cancelListener = null;
     constructor() {
       super();
-      __publicField(this, "onSuccessFn", null);
-      __publicField(this, "successListener", null);
-      __publicField(this, "cancelListener", null);
       this.$dialog = $("dialog#confirm");
       this.$title = this.$dialog.querySelector("sp-heading");
       this.$body = this.$dialog.querySelector("#confirm-body");
@@ -1019,11 +968,11 @@
 
   // src/dialog-prompt.js
   var PromptDialog = class extends EventTarget {
+    onSuccessFn = null;
+    successListener = null;
+    cancelListener = null;
     constructor() {
       super();
-      __publicField(this, "onSuccessFn", null);
-      __publicField(this, "successListener", null);
-      __publicField(this, "cancelListener", null);
       this.$dialog = $("dialog#prompt");
       this.$title = this.$dialog.querySelector("sp-heading");
       this.$input = this.$dialog.querySelector("#prompt-input");
@@ -1075,15 +1024,15 @@
   var PLUGIN_NAME = "Magic Markup";
   var PLUGIN_VERSION = __require("uxp").versions.plugin;
   var MagicMarkupPlugin = class {
+    PRODUCTION = false;
+    loaded = false;
+    textareas = {};
+    app = null;
+    listeners = [];
+    scope = null;
+    runner = null;
+    presets = null;
     constructor(app3) {
-      __publicField(this, "PRODUCTION", false);
-      __publicField(this, "loaded", false);
-      __publicField(this, "textareas", {});
-      __publicField(this, "app", null);
-      __publicField(this, "listeners", []);
-      __publicField(this, "scope", null);
-      __publicField(this, "runner", null);
-      __publicField(this, "presets", null);
       this.app = app3;
       this.scope = new Scope(this);
       this.runButton = new RunButton(this);
@@ -1107,9 +1056,9 @@
     }
     setupInfo() {
       $("#info .version").textContent = `\u{1F308} v${PLUGIN_VERSION}`;
-      $("#info .help").addEventListener("click", (_) => __async(this, null, function* () {
-        yield shell.openExternal("https://github.com/adamkiss/magic-markup-for-indesign#readme");
-      }));
+      $("#info .help").addEventListener("click", async (_) => {
+        await shell.openExternal("https://github.com/adamkiss/magic-markup-for-indesign#readme");
+      });
       const $markerTemplate = $("#cheatsheet-marker-template");
       for (const markerName in Markers.CODES) {
         const marker = Markers.CODES[markerName];
@@ -1131,7 +1080,6 @@
       });
     }
     applyMagic({ wholeDocument = false }) {
-      var _a, _b, _c, _d;
       if (!this.app.activeDocument)
         return;
       if (!this.scope)
@@ -1151,7 +1099,7 @@
         ensureCharacterStyles(this.app.activeDocument, ["Hyperlink"]);
       }
       const greps = [];
-      if ((_b = (_a = config["collapse-newlines"]) == null ? void 0 : _a.rules) == null ? void 0 : _b.length) {
+      if (config["collapse-newlines"]?.rules?.length) {
         greps.push(...config["collapse-newlines"].rules);
       }
       for (const rule of config.paragraph.rules) {
@@ -1166,7 +1114,7 @@
           { changeTo: "$1", appliedCharacterStyle: rule.style }
         ]);
       }
-      if ((_d = (_c = config.markers) == null ? void 0 : _c.rules) == null ? void 0 : _d.length) {
+      if (config.markers?.rules?.length) {
         greps.push(...config.markers.rules);
       }
       this.app.doScript(() => {

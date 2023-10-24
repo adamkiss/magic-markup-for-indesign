@@ -103,25 +103,16 @@ export function replaceMarkdownLinks ({
 		if (isSelection && index === 0) {
 			const {index: newIndex, length: newLength} = root
 
-			console.log(
-				root,
-				root.parentStory,
-				-(text.length - 1) + newIndex,
-				newIndex + newLength - 1,
-				root.parentStory.characters.itemByRange(
-					-(text.length - 1) + newIndex, // <- shift index forward,
-										 newIndex + newLength - 1 // <- the range stays the same
-				)
-			);
-
 			// reset the selection to <replaced text> + "new selection"
 			// note: the second part says "length", but it's actually the "end index",
 			// so by adding the length to index before adjustment,
 			// we're actually increasing the "length" of the selection
-			root.parentStory.characters.itemByRange(
-				-(text.length - 1) + newIndex , // <- shift index forward,
-									 newIndex + newLength - 1 // <- the range stays the same
-			).select()
+			try {
+				root.parentStory.characters.itemByRange(
+					-(text.length - 1) + newIndex , // <- shift index forward,
+										 newIndex + newLength - 1 // <- the range stays the same
+				).select()
+			} catch (e) {}
 		}
 		// Sometimes (?) the root is invalid, and while it works, even resolving `root.isValid`
 		// breaks the root.content in the next iteration. resetting the root to selection (again)
